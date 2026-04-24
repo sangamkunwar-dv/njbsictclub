@@ -1,5 +1,5 @@
-'use client';
-export const dynamic = 'force-dynamic'
+// Remove 'use client' from here
+export const dynamic = 'force-dynamic';
 
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
