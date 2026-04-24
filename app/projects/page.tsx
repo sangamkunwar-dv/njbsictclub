@@ -29,23 +29,22 @@ export default function ProjectsPage() {
   const fetchProjects = async () => {
     setLoading(true)
 
-    let query = supabase.from('projects').select('*')
+    try {
+      const url = `/api/projects${filterStatus ? `?status=${filterStatus}` : ''}`
+      const response = await fetch(url)
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch projects')
+      }
 
-    if (filterStatus) {
-      query = query.eq('status', filterStatus)
-    }
-
-    const { data, error } = await query.order('created_at', {
-      ascending: false,
-    })
-
-    if (error) {
-      console.error(error.message)
-    } else {
+      const data = await response.json()
       setProjects(data || [])
+    } catch (error: any) {
+      console.error('Error fetching projects:', error.message)
+      setProjects([])
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   const getStatusColor = (status: string) => {

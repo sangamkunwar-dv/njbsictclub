@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server'
 import { connectDB } from '@/lib/mongodb'
 import Team from '@/models/Team'
-import { ObjectId } from 'mongodb'
 
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB()
+    const { id } = await params
     const data = await req.json()
 
-    const team = await Team.findByIdAndUpdate(params.id, data, { new: true })
+    const team = await Team.findByIdAndUpdate(id, data, { new: true })
     if (!team) {
       return NextResponse.json({ error: 'Team member not found' }, { status: 404 })
     }
@@ -24,12 +24,13 @@ export async function PUT(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB()
+    const { id } = await params
 
-    const team = await Team.findByIdAndDelete(params.id)
+    const team = await Team.findByIdAndDelete(id)
     if (!team) {
       return NextResponse.json({ error: 'Team member not found' }, { status: 404 })
     }

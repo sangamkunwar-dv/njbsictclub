@@ -40,12 +40,16 @@ export function Navbar() {
   const fetchProfile = async () => {
     if (!user) return;
     try {
-      const { data } = await supabase
-        .from('user_profiles')
-        .select('full_name, avatar_url, member_id, role')
-        .eq('id', user.id)
-        .single();
-      if (data) setProfile(data);
+      const response = await fetch('/api/auth/me');
+      const data = await response.json();
+      if (data.user) {
+        setProfile({
+          full_name: data.user.full_name,
+          avatar_url: data.user.avatar_url,
+          member_id: data.user.userId,
+          role: data.user.role,
+        });
+      }
     } catch (error) {
       console.error('[v0] Error fetching profile:', error);
     }

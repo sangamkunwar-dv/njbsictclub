@@ -7,27 +7,35 @@ import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
 import { Github, Twitter, Globe } from 'lucide-react'
 
+interface TeamMember {
+  _id?: string
+  id?: string
+  name: string
+  role: string
+  bio?: string
+  avatar?: string
+  github?: string
+  twitter?: string
+  website?: string
+}
+
 export default function TeamPage() {
-  const [members, setMembers] = useState<Member[]>([])
+  const [members, setMembers] = useState<TeamMember[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchMembers = async () => {
       try {
-        const { data, error } = await supabase
-          .from('team_members')
-          .select('*')
-          .order('created_at', { ascending: false })
-
-        if (error) {
-          console.error(error)
-          setMembers([])
-          return
+        const response = await fetch('/api/admin/team')
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch team members')
         }
 
-        setMembers((data as Member[]) || [])
+        const data = await response.json()
+        setMembers(data || [])
       } catch (error) {
-        console.error(error)
+        console.error('Error fetching team members:', error)
         setMembers([])
       } finally {
         setLoading(false)
@@ -86,8 +94,8 @@ export default function TeamPage() {
                     <div className="flex justify-center mb-4">
                       <div className="relative">
                         <img
-                          src={member.avatar_url || '/default-avatar.png'}
-                          alt={member.display_name || 'Team member'}
+                          src={member.avatar || '/default-avatar.png'}
+                          alt={member.name || 'Team member'}
                           className="
                             w-24 h-24 rounded-full object-cover
                             border-2 border-primary/40
@@ -101,7 +109,7 @@ export default function TeamPage() {
 
                     {/* NAME */}
                     <h3 className="text-xl font-semibold text-center">
-                      {member.display_name}
+                      {member.name}
                     </h3>
 
                     {/* ROLE BADGE */}
@@ -121,9 +129,9 @@ export default function TeamPage() {
                     {/* SOCIALS */}
                     <div className="flex justify-center gap-3">
 
-                      {member.github_url && (
+                      {member.github && (
                         <a
-                          href={member.github_url}
+                          href={member.github}
                           target="_blank"
                           className="
                             p-2 rounded-lg
@@ -136,9 +144,9 @@ export default function TeamPage() {
                         </a>
                       )}
 
-                      {member.twitter_url && (
+                      {member.twitter && (
                         <a
-                          href={member.twitter_url}
+                          href={member.twitter}
                           target="_blank"
                           className="
                             p-2 rounded-lg
@@ -151,9 +159,9 @@ export default function TeamPage() {
                         </a>
                       )}
 
-                      {member.website_url && (
+                      {member.website && (
                         <a
-                          href={member.website_url}
+                          href={member.website}
                           target="_blank"
                           className="
                             p-2 rounded-lg

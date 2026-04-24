@@ -24,7 +24,7 @@ export default function AdminMembers() {
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
-    role: 'member' as const,
+    role: 'member' as 'member' | 'organizer' | 'admin',
   })
   const [formLoading, setFormLoading] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null)
