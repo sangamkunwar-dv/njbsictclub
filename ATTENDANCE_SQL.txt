@@ -1,0 +1,22 @@
+-- CREATE ATTENDANCE LOGS TABLE
+CREATE TABLE IF NOT EXISTS attendance_logs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  member_id text NOT NULL,
+  event_id uuid,
+  check_in_time TIMESTAMP DEFAULT NOW(),
+  status VARCHAR(50) DEFAULT 'present',
+  qr_data text,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ENABLE RLS
+ALTER TABLE attendance_logs ENABLE ROW LEVEL SECURITY;
+
+-- RLS POLICIES
+CREATE POLICY "Allow public read attendance" ON attendance_logs FOR SELECT USING (true);
+CREATE POLICY "Allow all for attendance" ON attendance_logs FOR ALL USING (true);
+
+-- INDEXES
+CREATE INDEX IF NOT EXISTS idx_attendance_member ON attendance_logs(member_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_event ON attendance_logs(event_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance_logs(check_in_time);
