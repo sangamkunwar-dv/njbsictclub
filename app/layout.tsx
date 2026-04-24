@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
+import Script from 'next/script' // Use Next.js Script component
 import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider } from '@/contexts/theme-context'
 import CookieBanner from '@/components/CookieBanner'
@@ -16,7 +17,7 @@ const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
 })
 
-// ✅ Metadata (IMPORTANT for SEO + AdSense)
+// ✅ Metadata
 export const metadata: Metadata = {
   metadataBase: new URL('https://njbsictclub.vercel.app'),
   title: 'ICT Club of NJBS | Tech Community',
@@ -24,16 +25,9 @@ export const metadata: Metadata = {
     'Innovation, Creativity, and Technology Club - Join our community of tech enthusiasts',
   generator: 'ICT Club NJBS',
   icons: {
-    icon: [
-      {
-        url: '/ictclubNJBS.jpg',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/ictclubNJBS.jpg',
-        media: '(prefers-color-scheme: dark)',
-      },
-    ],
+    // Standard icon path
+    icon: '/ictclubNJBS.jpg', 
+    shortcut: '/ictclubNJBS.jpg',
     apple: '/ictclubNJBS.jpg',
   },
 }
@@ -46,19 +40,28 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      suppressHydrationWarning
+      // ✅ Helps prevent hydration errors from extensions/themes
+      suppressHydrationWarning 
       className={`${geist.variable} ${geistMono.variable}`}
     >
       <head>
-        {/* ✅ Google AdSense Script */}
-        <script
+        {/* ✅ Fixes the 404 favicon error by explicitly pointing to your file */}
+        <link rel="icon" href="/ictclubNJBS.jpg" />
+      </head>
+
+      <body 
+        className="font-sans antialiased bg-background text-foreground"
+        // ✅ CRITICAL: Prevents the "removeChild" crash caused by browser extensions or translation
+        suppressHydrationWarning={true}
+      >
+        {/* ✅ Better way to load AdSense in Next.js */}
+        <Script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
           crossOrigin="anonymous"
-        ></script>
-      </head>
+          strategy="afterInteractive"
+        />
 
-      <body className="font-sans antialiased bg-background text-foreground">
         <ThemeProvider>
           {children}
 
