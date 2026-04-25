@@ -11,6 +11,18 @@ const MessageSchema = new mongoose.Schema(
       enum: ['new', 'read', 'replied'],
       default: 'new',
     },
+    adminReply: {
+      type: String,
+      default: null,
+    },
+    adminEmail: {
+      type: String,
+      default: process.env.ADMIN_EMAIL || 'admin@njbsictclub.com',
+    },
+    repliedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 )

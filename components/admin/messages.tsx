@@ -14,6 +14,8 @@ interface ContactMessage {
   subject: string
   message: string
   status: 'new' | 'read' | 'replied'
+  adminReply?: string
+  repliedAt?: string
   createdAt: string
 }
 
@@ -21,6 +23,8 @@ export default function AdminMessages() {
   const [messages, setMessages] = useState<ContactMessage[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [replyText, setReplyText] = useState('')
+  const [sendingReply, setSendingReply] = useState(false)
 
   useEffect(() => {
     fetchMessages()
@@ -80,7 +84,50 @@ export default function AdminMessages() {
     }
   }
 
-  const selectedMessage = messages.find(m => m.id === selectedId)
+  // ✅ SEND REPLY
+  const handleSendReply = async (id: string) => {
+    if (!replyText.trim()) {
+      alert('Please enter a reply message')
+      return
+    }
+
+    setSendingReply(true)
+
+    try {
+      const res = await fetch(`/api/admin/messages/${id}/reply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminReply: replyText }),
+      })
+
+      if (res.ok) {
+        const result = await res.json()
+        setMessages((prev) =>
+          prev.map((m) =>
+            m._id === id
+              ? {
+                  ...m,
+                  status: 'replied',
+                  adminReply: replyText,
+                  repliedAt: new Date().toISOString(),
+                }
+              : m
+          )
+        )
+        setReplyText('')
+        alert('Reply sent successfully to ' + result.data.email)
+      } else {
+        alert('Failed to send reply')
+      }
+    } catch (error) {
+      console.error('Reply error:', error)
+      alert('Error sending reply')
+    } finally {
+      setSendingReply(false)
+    }
+  }
+
+  const selectedMessage = messages.find(m => m._id === selectedId)
 
   // ✅ LOADING STATE
   if (loading) {
@@ -125,42 +172,96 @@ export default function AdminMessages() {
       </div>
 
       {/* RIGHT: DETAILS */}
-      <div className="lg:col-span-2">
+      <div className="lg:col-span-2 max-h-[600px] overflow-y-auto">
         {selectedMessage ? (
-          <Card className="p-6 flex flex-col h-full">
+          <Card className="p-6 flex flex-col gap-4">
 
-            <h3 className="text-lg font-semibold">
-              {selectedMessage.subject}
-            </h3>
+            <div>
+              <h3 className="text-lg font-semibold">
+                {selectedMessage.subject}
+              </h3>
 
-            <p className="text-muted-foreground">
-              {selectedMessage.name} • {selectedMessage.email}
-            </p>
+              <p className="text-muted-foreground text-sm">
+                {selectedMessage.name} • {selectedMessage.email}
+              </p>
 
-            <div className="bg-muted p-4 rounded mt-4 flex-grow">
+              <div className="flex items-center gap-2 mt-2">
+                <span className={`text-xs px-2 py-1 rounded-full ${
+                  selectedMessage.status === 'new' ? 'bg-red-100 text-red-700' :
+                  selectedMessage.status === 'read' ? 'bg-yellow-100 text-yellow-700' :
+                  'bg-green-100 text-green-700'
+                }`}>
+                  {selectedMessage.status.toUpperCase()}
+                </span>
+              </div>
+
+              <p className="text-xs text-muted-foreground mt-2">
+                {selectedMessage.createdAt
+                  ? new Date(selectedMessage.createdAt).toLocaleString()
+                  : ''}
+              </p>
+            </div>
+
+            <div className="bg-muted p-4 rounded">
               <p className="text-sm whitespace-pre-wrap">
                 {selectedMessage.message}
               </p>
             </div>
 
-            <p className="text-xs text-muted-foreground mt-2">
-              {selectedMessage.createdAt
-                ? new Date(selectedMessage.createdAt).toLocaleString()
-                : ''}
-            </p>
+            {/* SHOW PREVIOUS REPLY IF EXISTS */}
+            {selectedMessage.adminReply && (
+              <div className="bg-green-50 border border-green-200 p-4 rounded">
+                <p className="text-sm font-semibold text-green-900 mb-2">Admin Reply:</p>
+                <p className="text-sm text-green-800 whitespace-pre-wrap">
+                  {selectedMessage.adminReply}
+                </p>
+                <p className="text-xs text-green-600 mt-2">
+                  Sent: {selectedMessage.repliedAt
+                    ? new Date(selectedMessage.repliedAt).toLocaleString()
+                    : ''}
+                </p>
+              </div>
+            )}
 
-            <div className="flex gap-2 mt-4">
+            {/* REPLY FORM - Only show if not already replied */}
+            {selectedMessage.status !== 'replied' && (
+              <div className="space-y-2">
+                <label className="text-sm font-semibold">Send Reply:</label>
+                <textarea
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  placeholder="Type your reply here..."
+                  className="w-full p-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={4}
+                />
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-2">
+              {selectedMessage.status !== 'replied' && (
+                <Button
+                  onClick={() => handleSendReply(selectedMessage._id)}
+                  disabled={sendingReply || !replyText.trim()}
+                  className="flex-1"
+                >
+                  <Mail size={16} className="mr-2" />
+                  {sendingReply ? 'Sending...' : 'Send Reply'}
+                </Button>
+              )}
+
               <Button
                 onClick={() => handleMarkAsRead(selectedMessage._id)}
-                className="flex-1"
+                disabled={selectedMessage.status === 'read' || selectedMessage.status === 'replied'}
+                variant="outline"
               >
                 <CheckCircle2 size={16} className="mr-2" />
-                Mark as Read
+                Mark Read
               </Button>
 
               <Button
                 onClick={() => handleDelete(selectedMessage._id)}
                 variant="destructive"
+                size="sm"
               >
                 <Trash2 size={16} />
               </Button>
