@@ -1,4 +1,4 @@
-# The Salon - Club Portal
+# ICT Club of NJBS
 
 A modern, high-performance community portal built with Next.js 16, Supabase, and TailwindCSS. Features a sophisticated dark design with glassmorphism effects, real-time authentication, event management, and more.
 
