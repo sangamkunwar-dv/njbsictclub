@@ -52,14 +52,18 @@ CREATE TABLE IF NOT EXISTS events (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Event registrations table
+-- Event registrations table with user details and message
 CREATE TABLE IF NOT EXISTS event_registrations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  status VARCHAR(50) DEFAULT 'registered', -- registered, attended, cancelled
+  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  phone VARCHAR(20),
+  message TEXT,
+  status VARCHAR(50) DEFAULT 'registered', -- registered, attended, cancelled, no-show
   registered_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE(event_id, user_id)
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Members projects (many-to-many) table

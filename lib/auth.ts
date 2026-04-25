@@ -216,6 +216,7 @@ export async function requestPasswordReset(email: string) {
     .from('reset_tokens')
     .insert({
       user_id: user.id,
+      email,
       code,
       expires_at: expiresAt,
     })
