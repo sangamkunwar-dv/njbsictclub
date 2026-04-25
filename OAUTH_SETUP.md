@@ -1,209 +1,291 @@
-# OAuth Authentication & QR Code Setup Guide
+# OAuth Authentication Setup Guide (Google & GitHub)
 
 ## Overview
-Your application now has complete OAuth authentication with Google and GitHub, plus QR code generation for user profiles that helps with attendance tracking and event management.
+This guide shows how to add Google and GitHub OAuth to your NJBS ICT Club platform. The custom JWT authentication system stays the same - OAuth just provides an additional login method.
 
-## Features Implemented
+## What You Get
 
-### 1. OAuth Authentication
-- **Google Login/Signup** - With official Google logo
-- **GitHub Login/Signup** - With official GitHub logo
-- **Email/Password Authentication** - Traditional signup still works
-- **User Detection** - Automatically determines if user exists or creates new account
+### OAuth Features
+- **Google Login/Signup** - Users can login with Google account
+- **GitHub Login/Signup** - Users can login with GitHub account
+- **Email/Password** - Still works as before
+- **Automatic User Creation** - First-time OAuth users are auto-registered
+- **User Detection** - Existing users can login via OAuth
 
-### 2. QR Code Generation
-- **Automatic QR Code** - Generated when users sign up (any method)
-- **User Identification** - QR code encodes user ID for attendance tracking
-- **Profile Display** - Shows in user profile page
-- **Download Feature** - Users can download their QR code as PNG
-- **Copy to Clipboard** - Quick copy functionality for sharing
+### QR Codes
+- **Auto-generated** - Every user gets a unique QR code
+- **User ID Encoding** - QR encodes user ID (NJBS-YYYYMMDDHHMMSS)
+- **Attendance Tracking** - Scan during events
+- **Admin Dashboard** - View member QR codes
 
-### 3. Updated Pages
-- **/auth/login** - Login with Google, GitHub, or Email
-- **/auth/signup** - Signup with Google, GitHub, or Email
-- **/profile** - Edit profile, view QR code, download QR, logout
+### Updated Pages
+- **/auth/login** - Email login + Google + GitHub buttons
+- **/auth/signup** - Email signup + Google + GitHub buttons
+- **/profile** - View/download personal QR code
 
 ## Environment Variables Required
 
-Make sure these are set in Vercel (Settings → Environment Variables):
+Add these to `.env.local` (and Vercel Settings):
 
+```env
+# Supabase (you already have these)
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
+JWT_SECRET=...
+
+# Google OAuth (get from Google Cloud Console)
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_client_id_here
+GOOGLE_CLIENT_SECRET=your_google_client_secret_here
+
+# GitHub OAuth (get from GitHub Developer Settings)
+NEXT_PUBLIC_GITHUB_CLIENT_ID=your_github_client_id_here
+GITHUB_CLIENT_SECRET=your_github_client_secret_here
+
+# App URL (important for OAuth callbacks)
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
-MONGODB_URI                   // MongoDB connection string
-JWT_SECRET                    // Secret for JWT tokens
 
-GOOGLE_CLIENT_ID              // From Google Cloud Console
-GOOGLE_CLIENT_SECRET          // From Google Cloud Console
-NEXT_PUBLIC_GOOGLE_CLIENT_ID  // Same as GOOGLE_CLIENT_ID (public)
+## Google OAuth Setup (Step-by-Step)
 
-GITHUB_CLIENT_ID              // From GitHub Developer Settings
-GITHUB_CLIENT_SECRET          // From GitHub Developer Settings
-NEXT_PUBLIC_GITHUB_CLIENT_ID  // Same as GITHUB_CLIENT_ID (public)
+### Step 1: Go to Google Cloud Console
+1. Visit: https://console.cloud.google.com/
+2. Sign in with your Google account
+3. Click "Select a Project" → "New Project"
+4. Name it "NJBS ICT Club"
+5. Click "Create"
 
-NEXTAUTH_URL                  // Your app URL (e.g., https://yourapp.vercel.app)
+### Step 2: Enable Google+ API
+1. Search for "Google+ API" in the search bar
+2. Click on it
+3. Click "Enable"
+
+### Step 3: Create OAuth 2.0 Credentials
+1. Go to "Credentials" (left sidebar)
+2. Click "Create Credentials" → "OAuth client ID"
+3. You'll be asked to create a consent screen first:
+   - Click "Create Consent Screen"
+   - Choose "External" user type
+   - Fill in app name: "NJBS ICT Club"
+   - Add your email for support
+   - Add scopes: email, profile, openid
+   - Add test users (your email)
+   - Save and continue
+4. Back to OAuth creation:
+   - Choose "Web application"
+   - Name: "NJBS ICT Club"
+   - **Add Authorized JavaScript origins:**
+     - http://localhost:3000 (for local testing)
+     - https://yourdomain.com (for production)
+   - **Add Authorized redirect URIs:**
+     - http://localhost:3000/api/auth/callback/google
+     - https://yourdomain.com/api/auth/callback/google
+   - Click "Create"
+
+### Step 4: Copy Your Credentials
+You'll see a popup with:
+- **Client ID** (public) → Copy to `NEXT_PUBLIC_GOOGLE_CLIENT_ID`
+- **Client Secret** (keep secret!) → Copy to `GOOGLE_CLIENT_SECRET`
+
+### Step 5: Add to `.env.local`
+```env
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_copied_client_id
+GOOGLE_CLIENT_SECRET=your_copied_client_secret
 ```
 
-## Google OAuth Setup
+### Done!
+Google login is now ready. Test by clicking "Continue with Google" on login page.
 
-### 1. Create Google Cloud Project
-- Go to https://console.cloud.google.com/
-- Create a new project
-- Enable Google+ API
+## GitHub OAuth Setup (Step-by-Step)
 
-### 2. Create OAuth Credentials
-- Go to Credentials → Create Credentials → OAuth 2.0 Client ID
-- Choose "Web application"
-- Add Authorized JavaScript origins:
-  - http://localhost:3000 (for local development)
-  - https://your-domain.com (for production)
-- Add Authorized redirect URIs:
-  - http://localhost:3000/api/auth/callback/google
-  - https://your-domain.com/api/auth/callback/google
+### Step 1: Go to GitHub Developer Settings
+1. Visit: https://github.com/settings/developers
+2. Click "OAuth Apps" (left sidebar)
+3. Click "New OAuth App"
 
-### 3. Copy Credentials
-- Copy Client ID and Client Secret
-- Add to Vercel environment variables
+### Step 2: Fill in Application Details
+- **Application name:** NJBS ICT Club
+- **Homepage URL:** http://localhost:3000 (or your domain)
+- **Application description:** Club membership and event management
+- **Authorization callback URL:**
+  - http://localhost:3000/api/auth/callback/github (for local testing)
+  - https://yourdomain.com/api/auth/callback/github (for production)
 
-## GitHub OAuth Setup
+### Step 3: Register Application
+Click "Register application"
 
-### 1. Create GitHub OAuth App
-- Go to https://github.com/settings/developers
-- Click "New OAuth App"
-- Fill in application details
+### Step 4: Copy Your Credentials
+You'll see the OAuth app page with:
+- **Client ID** (visible at top) → Copy to `NEXT_PUBLIC_GITHUB_CLIENT_ID`
+- **Client Secret** (click "Generate a new client secret") → Copy to `GITHUB_CLIENT_SECRET`
 
-### 2. Configure OAuth App
-- Authorization callback URL:
-  - http://localhost:3000/api/auth/callback/github (dev)
-  - https://your-domain.com/api/auth/callback/github (prod)
+⚠️ Important: Client Secret is only shown once! Copy it immediately.
 
-### 3. Copy Credentials
-- Copy Client ID and Client Secret
-- Add to Vercel environment variables
+### Step 5: Add to `.env.local`
+```env
+NEXT_PUBLIC_GITHUB_CLIENT_ID=your_copied_client_id
+GITHUB_CLIENT_SECRET=your_copied_client_secret
+```
 
-## Database Schema (Updated User Model)
+### Done!
+GitHub login is now ready. Test by clicking "Continue with GitHub" on login page.
 
-```javascript
-{
-  email: String (unique),
-  password: String (optional for OAuth users),
-  full_name: String,
-  role: String ('member' | 'organizer' | 'admin'),
+## Database Schema (Supabase Users Table)
+
+```sql
+CREATE TABLE users (
+  id UUID PRIMARY KEY,
+  user_id VARCHAR(20) UNIQUE,        -- NJBS-YYYYMMDDHHMMSS
+  email VARCHAR(255) UNIQUE,
+  password_hash VARCHAR(255),         -- NULL for OAuth users
+  full_name VARCHAR(255),
+  phone VARCHAR(20),
   
-  // OAuth Fields
-  oauthProvider: String ('email' | 'google' | 'github'),
-  googleId: String (unique, sparse),
-  githubId: String (unique, sparse),
-  avatar: String (URL),
+  -- OAuth Fields
+  oauth_provider VARCHAR(50),         -- 'email', 'google', 'github'
+  google_id VARCHAR(255) UNIQUE,      -- NULL unless from Google
+  github_id VARCHAR(255) UNIQUE,      -- NULL unless from GitHub
   
-  // QR Code
-  qrCode: String (Base64 encoded image),
-  userId: String (unique - used in QR code),
+  role VARCHAR(50) DEFAULT 'member',  -- member, admin, moderator
+  status VARCHAR(50) DEFAULT 'active',
   
-  createdAt: Date,
-  updatedAt: Date
-}
+  created_at TIMESTAMP,
+  updated_at TIMESTAMP
+);
 ```
 
-## API Endpoints
+## API Routes
 
-### OAuth Callbacks
-- `POST /api/auth/callback/google` - Handles Google OAuth
-- `POST /api/auth/callback/github` - Handles GitHub OAuth
+### Authentication Endpoints
+- `POST /api/auth/signup` - Email signup
+- `POST /api/auth/login` - Email login
+- `POST /api/auth/forgot-password` - Request password reset
+- `POST /api/auth/reset-password` - Reset with code
+- `GET /api/auth/me` - Get current user
 
-### User Authentication
-- `POST /api/auth/signup` - Create user with email
-- `POST /api/auth/login` - Login with email
-- `GET /api/auth/me` - Get current user info
-- `POST /api/auth/logout` - Logout user
+### OAuth Callback Routes (Auto-generated)
+- `GET /api/auth/callback/google` - Google OAuth callback
+- `GET /api/auth/callback/github` - GitHub OAuth callback
 
-## How It Works
+## How OAuth Works with JWT
 
-### 1. User Signs Up with Google/GitHub
-- User clicks "Login with Google/GitHub"
-- Redirected to OAuth provider
-- After approval, redirected to callback route
-- System creates user with OAuth provider info
-- QR code is automatically generated
-- User redirected to profile page
+### 1. User Clicks "Continue with Google/GitHub"
+1. Redirected to Google/GitHub login page
+2. User approves app access
+3. Redirected to `/api/auth/callback/[provider]`
 
-### 2. QR Code Generation
-- When user account is created (any method)
-- A unique userId is generated
-- QR code is created encoding: `{userId}`
-- Stored as Base64 image in database
-- Can be used for attendance scanning
+### 2. OAuth Callback Processing
+1. System receives authorization code from provider
+2. Exchanges code for user info (email, name, avatar)
+3. Checks if user exists in database
+4. **If new user:** Creates account with OAuth provider info
+5. **If exists:** Logs them in with existing account
+6. Generates JWT token
+7. Sends token as HTTP-only cookie
+8. Redirects to `/` or admin dashboard
 
-### 3. User Profile Access
-- Users can view their profile at `/profile`
-- See their QR code
-- Download QR code as PNG
-- Copy QR code to clipboard
-- Edit profile information
-- Logout
+### 3. QR Code Generation
+- Each user automatically gets a unique user ID: `NJBS-YYYYMMDDHHMMSS`
+- QR code is generated encoding this user ID
+- QR code is stored in Supabase
+- Can be viewed in user profile
+- Admin can view and download all member QR codes
 
-## Attendance Integration
+### 4. After Login
+- User has JWT token in HTTP-only cookie
+- Token valid for 7 days
+- User can access protected pages
+- Token sent automatically with each request
 
-The QR codes can be used for attendance tracking:
+## Testing OAuth Locally
 
-1. **Admin Dashboard** - Can scan QR codes during events
-2. **Mobile App** - Can scan to mark attendance
-3. **Check-in System** - Uses embedded userId from QR code
-
-To integrate with attendance:
-```javascript
-// Scan QR code to get userId
-const userId = scannedQRCodeData; // Contains user ID
-
-// Mark attendance
-POST /api/admin/attendance
-Body: { userId, eventId }
+### Step 1: Start Development Server
+```bash
+npm run dev
 ```
+
+### Step 2: Test Google Login
+1. Visit http://localhost:3000/auth/login
+2. Click "Continue with Google"
+3. Sign in with your Google account
+4. Click "Allow" when asked for permissions
+5. Should be redirected to dashboard
+6. Check `/admin` to see your profile
+
+### Step 3: Test GitHub Login
+1. Visit http://localhost:3000/auth/signup
+2. Click "Continue with GitHub"
+3. Sign in with your GitHub account
+4. Click "Authorize" when asked
+5. Should be redirected to dashboard
+6. Check `/admin` to see your profile
+
+### Step 4: View Your QR Code
+1. Go to `/admin`
+2. Click Members tab
+3. Find your account
+4. Click to see details
+5. Should see your QR code
+6. Can download or copy it
 
 ## Troubleshooting
 
-### "Google/GitHub button not working"
-- Check if NEXT_PUBLIC_GOOGLE_CLIENT_ID and NEXT_PUBLIC_GITHUB_CLIENT_ID are set
-- Verify callback URLs are correct in Google/GitHub console
+### OAuth Button Not Showing
+- Check if `NEXT_PUBLIC_GOOGLE_CLIENT_ID` and `NEXT_PUBLIC_GITHUB_CLIENT_ID` are in `.env.local`
+- Restart dev server after adding env vars
 - Check browser console for errors
 
-### "User not created after OAuth"
-- Check MongoDB connection (MONGODB_URI)
-- Check server logs for database errors
-- Verify email is returned from OAuth provider
+### "Invalid redirect URI"
+- Verify callback URLs match exactly:
+  - Google: `http://localhost:3000/api/auth/callback/google`
+  - GitHub: `http://localhost:3000/api/auth/callback/github`
+- Check spelling and protocol (http vs https)
 
-### "QR code not showing"
-- Ensure qrcode package is installed (`npm install qrcode`)
-- Check if qrCode field exists in MongoDB
-- Refresh profile page
+### "User not found" or login fails
+- Check Supabase table `users` has correct schema
+- Verify `NEXT_PUBLIC_SUPABASE_URL` and keys are correct
+- Check server logs for errors
 
-## Testing
+### QR Code Not Showing
+- Make sure `qrcode` package is installed
+- Refresh page after OAuth login
+- Check user record in Supabase
 
-### Local Development
-```bash
-# Start dev server
-npm run dev
+## Security Features
 
-# Test endpoints
-curl http://localhost:3000/auth/login
-curl http://localhost:3000/auth/signup
-curl http://localhost:3000/profile
-```
+✅ OAuth tokens never exposed to frontend
+✅ JWT tokens stored in HTTP-only cookies
+✅ All callbacks validate state parameter
+✅ PKCE protection for OAuth flows
+✅ QR codes encode only user ID (not sensitive)
+✅ SSL/HTTPS enforced in production
+✅ No password stored for OAuth users
 
-### Test Flow
-1. Go to http://localhost:3000/auth/signup
-2. Click "Google" or "GitHub"
-3. Complete OAuth flow
-4. Should be redirected to /profile
-5. Should see QR code
-6. Can download or copy QR code
+## Production Deployment
 
-## Security Notes
+When deploying to Vercel:
 
-- QR codes contain only user ID, not sensitive data
-- JWT tokens stored in HTTP-only cookies
-- OAuth tokens are server-side only
-- All API routes check authentication
-- Password hashing with bcryptjs
+1. **Update OAuth Redirect URLs** in Google Cloud Console:
+   - https://yourdomain.com/api/auth/callback/google
+
+2. **Update OAuth Redirect URLs** in GitHub Settings:
+   - https://yourdomain.com/api/auth/callback/github
+
+3. **Add Environment Variables** to Vercel (Settings → Environment Variables):
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=...
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+   SUPABASE_SERVICE_ROLE_KEY=...
+   JWT_SECRET=...
+   NEXT_PUBLIC_GOOGLE_CLIENT_ID=...
+   GOOGLE_CLIENT_SECRET=...
+   NEXT_PUBLIC_GITHUB_CLIENT_ID=...
+   GITHUB_CLIENT_SECRET=...
+   NEXT_PUBLIC_APP_URL=https://yourdomain.com
+   ```
+
+4. **Redeploy** your application
 
 ---
 
-For questions or issues, check the browser console and server logs for detailed error messages.
+For more help, check the browser console (F12) and Vercel logs for detailed error messages.
