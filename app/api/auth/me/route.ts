@@ -4,7 +4,7 @@ import { verifyToken } from '@/lib/auth'
 
 export async function GET() {
   try {
-    // ✅ FIX: MUST await cookies()
+    // ✅ FIXED: must await cookies()
     const cookieStore = await cookies()
 
     const token = cookieStore.get('token')?.value
