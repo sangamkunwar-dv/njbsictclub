@@ -4,10 +4,11 @@ import { verifyToken } from '@/lib/auth'
 
 export async function GET() {
   try {
-    // ✅ FIXED: must await cookies()
+    // ✅ FIX: force resolve cookies properly
     const cookieStore = await cookies()
 
-    const token = cookieStore.get('token')?.value
+    const tokenCookie = cookieStore.get('token')
+    const token = tokenCookie ? tokenCookie.value : undefined
 
     if (!token) {
       return NextResponse.json(
