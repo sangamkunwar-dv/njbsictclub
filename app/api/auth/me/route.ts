@@ -4,11 +4,11 @@ import { verifyToken } from '@/lib/auth'
 
 export async function GET() {
   try {
-    // ✅ FIX: force resolve cookies properly
-    const cookieStore = await cookies()
-
-    const tokenCookie = cookieStore.get('token')
-    const token = tokenCookie ? tokenCookie.value : undefined
+    // 1. Await the cookies() function
+    const cookieStore = await cookies();
+    
+    // 2. Access the token
+    const token = cookieStore.get('token')?.value;
 
     if (!token) {
       return NextResponse.json(
@@ -31,6 +31,7 @@ export async function GET() {
       user: decoded,
     })
   } catch (error: any) {
+    console.error("Auth API Error:", error);
     return NextResponse.json(
       { error: error?.message || 'Server error' },
       { status: 500 }
