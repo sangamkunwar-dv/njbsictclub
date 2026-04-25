@@ -1,9 +1,8 @@
 {
-  "name": "workspace",
-  "version": "0.0.0",
-  "license": "MIT",
+  "name": "my-project",
+  "version": "0.1.0",
+  "private": true,
   "scripts": {
-<<<<<<< HEAD
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -69,16 +68,17 @@
     "tailwind-merge": "^3.3.1",
     "vaul": "^1.1.2",
     "zod": "^3.24.1"
-=======
-    "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
-    "build": "pnpm run typecheck && pnpm -r --if-present run build",
-    "typecheck:libs": "tsc --build",
-    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
->>>>>>> cf889c56433b2ca43efb1f92210970a9c3cc6f0d
   },
-  "private": true,
   "devDependencies": {
-    "typescript": "~5.9.2",
-    "prettier": "^3.8.1"
+    "@tailwindcss/postcss": "^4.2.0",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^22",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "postcss": "^8.5",
+    "tailwindcss": "^4.2.0",
+    "tw-animate-css": "1.3.3",
+    "typescript": "5.7.3"
   }
 }
