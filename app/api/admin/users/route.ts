@@ -107,7 +107,10 @@ async function handler(req: NextRequest) {
   )
 }
 
-export const GET = (req: NextRequest) =>
-  requireAdmin(async (authReq) => handler(authReq))
-export const POST = (req: NextRequest) =>
-  requireAdmin(async (authReq) => handler(authReq))
+export async function GET(req: NextRequest) {
+  return handler(req)
+}
+
+export async function POST(req: NextRequest) {
+  return handler(req)
+}

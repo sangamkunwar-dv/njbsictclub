@@ -150,17 +150,23 @@ async function handler(
   )
 }
 
-export const GET = (
+export async function GET(
   req: NextRequest,
-  options: { params: Promise<{ id: string }> }
-) => requireAdmin(async (authReq) => handler(authReq, options))
+  { params }: { params: Promise<{ id: string }> }
+) {
+  return handler(req, { params })
+}
 
-export const PUT = (
+export async function PUT(
   req: NextRequest,
-  options: { params: Promise<{ id: string }> }
-) => requireAdmin(async (authReq) => handler(authReq, options))
+  { params }: { params: Promise<{ id: string }> }
+) {
+  return handler(req, { params })
+}
 
-export const DELETE = (
+export async function DELETE(
   req: NextRequest,
-  options: { params: Promise<{ id: string }> }
-) => requireAdmin(async (authReq) => handler(authReq, options))
+  { params }: { params: Promise<{ id: string }> }
+) {
+  return handler(req, { params })
+}

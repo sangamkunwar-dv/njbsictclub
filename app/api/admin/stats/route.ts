@@ -43,5 +43,6 @@ async function handler(req: NextRequest) {
   }
 }
 
-export const GET = (req: NextRequest) =>
-  requireAdmin(async (authReq) => handler(authReq))
+export async function GET(req: NextRequest) {
+  return handler(req)
+}
