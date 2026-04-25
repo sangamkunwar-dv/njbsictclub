@@ -14,34 +14,34 @@ export async function POST(req: Request) {
 
     const result = await authenticateUser(email, password)
 
-    if (!result?.success) {
+    if (!result.success) {
       return NextResponse.json(
-        { error: result?.error || 'Authentication failed' },
+        { error: result.error || 'Authentication failed' },
         { status: 401 }
       )
     }
 
     if (!result.token) {
       return NextResponse.json(
-        { error: 'Token missing' },
+        { error: 'Token not generated' },
         { status: 500 }
       )
     }
 
-    const res = NextResponse.json({
-      user: result.user ?? null,
+    const response = NextResponse.json({
       success: true,
+      user: result.user ?? null,
     })
 
-    res.cookies.set('token', result.token, {
+    response.cookies.set('token', result.token, {
       httpOnly: true,
-      secure: true,
-      sameSite: 'none',
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax', // safer than 'none' unless cross-domain needed
       path: '/',
       maxAge: 7 * 24 * 60 * 60,
     })
 
-    return res
+    return response
   } catch (error: any) {
     return NextResponse.json(
       { error: error?.message || 'Login failed' },
