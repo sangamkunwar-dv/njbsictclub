@@ -14,23 +14,22 @@ export async function POST(req: Request) {
 
     const result = await authenticateUser(email, password)
 
-    if (!result.success) {
+    if (!result?.success) {
       return NextResponse.json(
-        { error: result.error || 'Authentication failed' },
+        { error: result?.error || 'Authentication failed' },
         { status: 401 }
       )
     }
 
-    // ✅ SAFE CHECK (fix for build error)
     if (!result.token) {
       return NextResponse.json(
-        { error: 'Token not generated' },
+        { error: 'Token missing' },
         { status: 500 }
       )
     }
 
     const res = NextResponse.json({
-      user: result.user,
+      user: result.user ?? null,
       success: true,
     })
 
