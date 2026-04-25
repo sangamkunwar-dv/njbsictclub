@@ -1,11 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
-import { getTokenFromRequest } from '@/lib/auth-middleware'
-import { getSupabaseServer } from '@/lib/supabase-server'
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
-    const token = getTokenFromRequest(req)
+    // ✅ FIX: must await cookies()
+    const cookieStore = await cookies()
+
+    const token = cookieStore.get('token')?.value
 
     if (!token) {
       return NextResponse.json(
@@ -23,38 +25,13 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    const supabase = getSupabaseServer()
-
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('id, user_id, email, full_name, role, status')
-      .eq('user_id', decoded.userId)
-      .maybeSingle()
-
-    if (error || !user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      )
-    }
-
     return NextResponse.json({
       success: true,
-      user: {
-        id: user.id,
-        userId: user.user_id,
-        email: user.email,
-        fullName: user.full_name,
-        role: user.role,
-        status: user.status,
-      },
-      token: decoded,
+      user: decoded,
     })
   } catch (error: any) {
-    console.error('[auth me error]', error)
-
     return NextResponse.json(
-      { error: error?.message || 'Failed to verify user' },
+      { error: error?.message || 'Server error' },
       { status: 500 }
     )
   }
