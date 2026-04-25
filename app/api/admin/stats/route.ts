@@ -1,18 +1,32 @@
-import { NextResponse } from 'next/server'
-import { connectDB } from '@/lib/mongodb'
-import User from '@/models/User'
-import { Event } from '@/models/Event'
-import Project from '@/models/Project'
-import Message from '@/models/Message'
+import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/auth-middleware'
+import { getSupabaseServer } from '@/lib/supabase-server'
 
-export async function GET() {
+async function handler(req: NextRequest) {
+  const supabase = getSupabaseServer()
+
   try {
-    await connectDB()
+    // Get counts from all tables
+    const [usersResult, eventsResult, projectsResult, messagesResult] =
+      await Promise.all([
+        supabase
+          .from('users')
+          .select('*', { count: 'exact', head: true }),
+        supabase
+          .from('events')
+          .select('*', { count: 'exact', head: true }),
+        supabase
+          .from('projects')
+          .select('*', { count: 'exact', head: true }),
+        supabase
+          .from('messages')
+          .select('*', { count: 'exact', head: true }),
+      ])
 
-    const totalMembers = await User.countDocuments()
-    const totalEvents = await Event.countDocuments()
-    const totalProjects = await Project.countDocuments()
-    const totalMessages = await Message.countDocuments()
+    const totalMembers = usersResult.count || 0
+    const totalEvents = eventsResult.count || 0
+    const totalProjects = projectsResult.count || 0
+    const totalMessages = messagesResult.count || 0
 
     return NextResponse.json({
       totalMembers,
@@ -21,6 +35,13 @@ export async function GET() {
       totalMessages,
     })
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('[v0] Stats error:', error)
+    return NextResponse.json(
+      { error: error.message || 'Failed to fetch stats' },
+      { status: 500 }
+    )
   }
 }
+
+export const GET = (req: NextRequest) =>
+  requireAdmin(async (authReq) => handler(authReq))

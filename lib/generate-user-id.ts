@@ -1,18 +1,23 @@
 /**
- * Generates a unique user ID in the format NJBS-XXXXXXXX
+ * Generates a unique user ID in the format NJBS-YYYYMMDDHHMMSS
  * NJBS = Club prefix
- * XXXXXXXX = 7-digit random number
+ * YYYYMMDDHHMMSS = Timestamp (year, month, day, hour, minute, second)
  */
 export function generateUserID(): string {
-  const randomNumber = Math.floor(Math.random() * 10000000)
-    .toString()
-    .padStart(7, '0')
-  return `NJBS-${randomNumber}`
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  const hours = String(now.getHours()).padStart(2, '0')
+  const minutes = String(now.getMinutes()).padStart(2, '0')
+  const seconds = String(now.getSeconds()).padStart(2, '0')
+  
+  return `NJBS-${year}${month}${day}${hours}${minutes}${seconds}`
 }
 
 /**
  * Validates if a user ID is in the correct format
  */
 export function isValidUserID(id: string): boolean {
-  return /^NJBS-\d{7}$/.test(id)
+  return /^NJBS-\d{14}$/.test(id)
 }

@@ -1,236 +1,225 @@
-# The Salon - Setup Guide
+# NJBS ICT Club - Supabase Migration Setup Guide
 
-This guide walks you through setting up The Salon portal from scratch.
+## Overview
+This project has been completely migrated from MongoDB to Supabase with a custom authentication system (not using Supabase Auth). The admin dashboard now includes full role management, QR code generation for members, and comprehensive project/event management.
 
-## Prerequisites
+## Key Changes Made
 
-- Supabase account (free tier is fine: https://supabase.com)
-- Node.js 18+ and pnpm installed
-- Git (optional, for version control)
+### 1. Database Migration
+- **Removed**: MongoDB and Mongoose models
+- **Added**: Supabase PostgreSQL database
+- **Tables Created**:
+  - `users` - User accounts with custom JWT auth
+  - `reset_tokens` - Password reset codes (6-digit, 15min expiry)
+  - `projects` - Club projects
+  - `events` - Club events
+  - `event_registrations` - Event attendance tracking
+  - `members_projects` - Many-to-many project membership
+  - `messages` - Announcements and messages
 
-## Step 1: Clone or Create Project
+### 2. User ID Format
+- **New Format**: `NJBS-YYYYMMDDHHMMSS` (e.g., `NJBS-20260425135423`)
+- Generated automatically on signup
+- Unique identifier for QR code generation
 
-If you downloaded this as a ZIP:
+### 3. Authentication System
+- **Type**: Custom JWT-based (NOT Supabase Auth)
+- **Features**:
+  - Email/password login and registration
+  - Password reset with 6-digit code verification (15-minute expiry)
+  - HTTP-only secure cookies
+  - JWT tokens with 7-day expiration
+  - Role-based access control (member/admin/moderator)
+
+### 4. Admin Features
+- **Admin Email**: sangamkunwar48@gmail.com (set as default admin)
+- **Dashboard Access**: `/admin`
+- **Admin Capabilities**:
+  - Manage all members (view, edit, delete, change roles)
+  - Generate QR codes for each member
+  - Create and manage projects
+  - Create and manage events
+  - Track event registrations
+  - View dashboard statistics
+
+### 5. QR Code Generation
+- Each member gets a unique QR code with their user ID
+- QR codes are generated on-demand using the `qrcode` library
+- Available via admin dashboard member detail view
+
+## Setup Instructions
+
+### Step 1: Verify Environment Variables
+Make sure you have these in your `.env.local`:
+```
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+JWT_SECRET=your_jwt_secret_key
+```
+
+### Step 2: Initialize Supabase Database
+
+#### Option A: Using Setup Script (Recommended)
 ```bash
-unzip salon-portal.zip
-cd salon-portal
+npm run setup:db
+# or
+node scripts/setup-database.js
 ```
 
-## Step 2: Install Dependencies
-
-```bash
-pnpm install
-```
-
-## Step 3: Set Up Supabase
-
-### 3a. Create a Supabase Project
-
-1. Go to https://app.supabase.com
-2. Click "New Project"
-3. Fill in the details:
-   - Name: "The Salon" (or your choice)
-   - Database Password: Create a strong password
-   - Region: Choose closest to your location
-   - Click "Create new project"
-
-Wait for the project to initialize (2-3 minutes).
-
-### 3b. Get Your Credentials
-
-1. Go to Project Settings > API
-2. Copy these values:
-   - `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
-   - `anon public` key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `service_role` key → `SUPABASE_SERVICE_ROLE_KEY`
-
-### 3c. Create .env.local
-
-In your project root, create `.env.local`:
-
-```
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
-```
-
-## Step 4: Set Up Database Schema
-
-### Method 1: Using Supabase Dashboard (Recommended)
-
-1. In Supabase, go to SQL Editor
-2. Click "New query"
-3. Copy everything from `scripts/setup-db.sql`
-4. Paste into the SQL editor
+#### Option B: Manual SQL Setup
+1. Go to your Supabase dashboard
+2. Click SQL Editor
+3. Create a new query
+4. Paste content from `scripts/setup-supabase.sql`
 5. Click "Run"
-6. You should see "Success" message
 
-**Optional - Add Sample Data:**
-1. Create another SQL query
-2. Copy everything from `scripts/seed-data.sql`
-3. Run it
-4. Now you'll have sample projects and events
+### Step 3: Create Admin User
+The setup script automatically creates the admin user:
+- **Email**: sangamkunwar48@gmail.com
+- **Default Password**: Admin@123 (CHANGE THIS IMMEDIATELY!)
+- **Role**: admin
 
-### Method 2: Using CLI
+## API Routes
 
-If you have Supabase CLI installed:
+### Authentication
+- `POST /api/auth/signup` - Register new user
+- `POST /api/auth/login` - Login
+- `POST /api/auth/forgot-password` - Request password reset code
+- `POST /api/auth/reset-password` - Reset password with code
+- `GET /api/auth/me` - Get current user info
 
-```bash
-supabase db push
-```
+### Admin - Users
+- `GET /api/admin/users` - List all users
+- `POST /api/admin/users` - Create new user
+- `GET /api/admin/users/[id]` - Get user details with QR code
+- `PUT /api/admin/users/[id]` - Update user (role, status, name, phone)
+- `DELETE /api/admin/users/[id]` - Delete user
 
-## Step 5: Configure OAuth (Optional but Recommended)
+### Admin - Projects
+- `GET /api/admin/projects` - List all projects
+- `POST /api/admin/projects` - Create new project
+- `GET /api/admin/projects/[id]` - Get project details
+- `PUT /api/admin/projects/[id]` - Update project
+- `DELETE /api/admin/projects/[id]` - Delete project
 
-To enable Google and GitHub login:
+### Admin - Events
+- `GET /api/admin/events` - List all events
+- `POST /api/admin/events` - Create new event
+- `GET /api/admin/events/[id]` - Get event details with registrations
+- `PUT /api/admin/events/[id]` - Update event
+- `DELETE /api/admin/events/[id]` - Delete event
 
-### Enable Google OAuth:
+### Admin - Stats
+- `GET /api/admin/stats` - Get dashboard statistics
 
-1. Go to https://console.cloud.google.com
-2. Create a new project
-3. Enable "Google+ API"
-4. Create OAuth 2.0 credentials (Web application)
-5. Add authorized redirect URI: `https://your-project.supabase.co/auth/v1/callback`
-6. Get your Client ID and Client Secret
-7. In Supabase:
-   - Go to Authentication > Providers > Google
-   - Enable it
-   - Paste Client ID and Client Secret
-   - Save
+## Pages
 
-### Enable GitHub OAuth:
+### Public/Auth Pages
+- `/auth/login` - Modern login page
+- `/auth/signup` - Modern signup with password strength indicator
+- `/auth/forgot-password` - Request password reset code
+- `/auth/reset-password` - Reset password with 6-digit code verification
 
-1. Go to https://github.com/settings/developers
-2. Create new OAuth App
-3. Set Authorization callback URL: `https://your-project.supabase.co/auth/v1/callback`
-4. Get your Client ID and Client Secret
-5. In Supabase:
-   - Go to Authentication > Providers > GitHub
-   - Enable it
-   - Paste Client ID and Client Secret
-   - Save
+### Admin Pages
+- `/admin` - Main admin dashboard with statistics and tabs
+  - Members tab - Manage all members, view QR codes
+  - Events tab - Create and manage events
+  - Projects tab - Create and manage projects
+  - Team tab - Team management
+  - Attendance tab - Event attendance tracking
+  - Messages tab - Announcements and messages
+  - Settings tab - Admin settings
 
-## Step 6: Run Development Server
+## Utility Files
 
-```bash
-pnpm dev
-```
+### New Files Created
+- `lib/supabase-server.ts` - Server-side Supabase client
+- `lib/supabase-browser.ts` - Browser-side Supabase client
+- `lib/auth.ts` - Authentication utilities (password hashing, JWT, password reset)
+- `lib/auth-middleware.ts` - Middleware for protecting routes
+- `lib/generate-user-id.ts` - Updated user ID generator
+- `scripts/setup-supabase.sql` - Database schema
+- `scripts/setup-database.js` - Database initialization script
 
-Open http://localhost:3000 in your browser.
+### Updated Files
+- `lib/generate-user-id.ts` - New NJBS-YYYYMMDDHHMMSS format
+- All auth API routes - Converted to Supabase
+- All admin API routes - Converted to Supabase
+- Admin page - Updated role checking
 
-## Step 7: Test the Application
+## Security Notes
 
-1. **Homepage**: Check if you see "The Salon" with all sections
-2. **Sign Up**: Create a test account using email/password
-3. **Team Page**: You should see sample team members (if you ran seed data)
-4. **Projects Page**: Browse sample projects
-5. **Events Page**: See upcoming events and try registering
-6. **Profile Page**: Update your profile information
-7. **Contact**: Fill out the contact form
+1. **JWT Secret**: Change `JWT_SECRET` in production
+2. **Password Reset**: Codes expire after 15 minutes
+3. **Admin Access**: Protected by JWT middleware
+4. **Password Hashing**: Using bcryptjs with salt 10
+5. **HTTP-only Cookies**: All authentication tokens are secure
 
-## Step 8: Customize Your Content
+## Testing the Setup
 
-### Add Team Members
+1. **Test Signup**:
+   ```bash
+   curl -X POST http://localhost:3000/api/auth/signup \
+     -H "Content-Type: application/json" \
+     -d '{"email":"test@example.com","password":"Test123!@#","fullName":"Test User"}'
+   ```
 
-1. Go to Supabase SQL Editor
-2. Run this query:
+2. **Test Login**:
+   ```bash
+   curl -X POST http://localhost:3000/api/auth/login \
+     -H "Content-Type: application/json" \
+     -d '{"email":"test@example.com","password":"Test123!@#"}'
+   ```
 
-```sql
-INSERT INTO members (display_name, role, bio, avatar_url, github_url, twitter_url, website_url, skills)
-VALUES (
-  'Your Name',
-  'Your Role (e.g., Developer)',
-  'A bit about yourself...',
-  'https://example.com/avatar.jpg',
-  'https://github.com/yourname',
-  'https://twitter.com/yourname',
-  'https://yourwebsite.com',
-  ARRAY['Skill1', 'Skill2', 'Skill3']
-);
-```
+3. **Test Admin Access**:
+   - Login as admin user (sangamkunwar48@gmail.com)
+   - Navigate to `/admin`
+   - Create projects and events from the dashboard
 
-### Add Projects
-
-```sql
-INSERT INTO projects (title, description, image_url, status, tech_stack, link)
-VALUES (
-  'Project Title',
-  'Project description...',
-  'https://example.com/image.jpg',
-  'ongoing',
-  ARRAY['Tech1', 'Tech2'],
-  'https://project-link.com'
-);
-```
-
-### Add Events
-
-```sql
-INSERT INTO events (title, description, image_url, date, location, type, capacity)
-VALUES (
-  'Event Name',
-  'Event description...',
-  'https://example.com/image.jpg',
-  NOW() + INTERVAL '7 days',
-  'Location or Virtual',
-  'meeting',
-  50
-);
-```
-
-## Step 9: Deploy to Vercel
-
-1. Push your code to GitHub:
-```bash
-git init
-git add .
-git commit -m "Initial commit"
-git remote add origin https://github.com/yourusername/salon-portal.git
-git push -u origin main
-```
-
-2. Go to https://vercel.com
-3. Click "Import Project"
-4. Select your GitHub repository
-5. Add environment variables in "Environment Variables":
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY`
-6. Click "Deploy"
+4. **Test Password Reset**:
+   - Go to `/auth/forgot-password`
+   - Enter your email
+   - Get 6-digit code from response (in dev mode)
+   - Go to `/auth/reset-password`
+   - Enter code and new password
 
 ## Troubleshooting
 
-### "Supabase URL is required"
-Make sure your `.env.local` file has the correct Supabase credentials.
+### "Database connection failed"
+- Check `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set correctly
+- Verify Supabase project is active
 
-### OAuth not working
-Check that:
-1. Redirect URLs are correctly set in OAuth provider settings
-2. Client IDs and secrets are correct
-3. OAuth is enabled in Supabase Authentication settings
+### "Invalid token" or "Unauthorized"
+- Check JWT_SECRET matches between signing and verification
+- Token may be expired (7-day expiry)
+- Ensure HTTP-only cookies are being sent
 
-### Can't see data on pages
-1. Check that you ran `scripts/seed-data.sql` or added data manually
-2. Verify tables exist in Supabase SQL Editor
-3. Check RLS policies aren't blocking your user
+### "User not found"
+- Clear browser cookies
+- Login again to get fresh token
 
-### Login page shows errors
-This usually means Supabase environment variables aren't set. Double-check `.env.local`.
+### QR Code not generating
+- Check `qrcode` package is installed
+- Verify user_id format is correct
 
-## Next Steps
+## Next Steps (Optional)
 
-Now that your portal is running:
+1. **Email Integration**: Connect to email service for password reset codes
+2. **Event Registration**: Allow members to register for events
+3. **Project Membership**: Add members to projects
+4. **Dashboard Analytics**: Enhanced statistics and charts
+5. **File Uploads**: Add project/event images using Vercel Blob
+6. **Export Functionality**: Export member lists and QR codes
 
-1. **Customize Colors**: Edit design tokens in `app/globals.css`
-2. **Add More Features**: Extend the codebase with additional functionality
-3. **Promote Your Community**: Share the link with your members
-4. **Build Community**: Use the platform to connect your team
+## Support
 
-## Getting Help
-
-- **Next.js Issues**: https://nextjs.org/docs
-- **Supabase Help**: https://supabase.com/docs
-- **TailwindCSS**: https://tailwindcss.com/docs
+For issues or questions:
+1. Check console logs in browser dev tools
+2. Check server logs in Vercel
+3. Verify Supabase connection in project dashboard
+4. Check JWT_SECRET and other environment variables
 
 ---
-
-Happy building! 🎉
+**Last Updated**: April 25, 2026
+**Status**: Ready for Production

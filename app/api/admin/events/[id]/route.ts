@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth-middleware'
 import { getSupabaseServer } from '@/lib/supabase-server'
-import { generateQRCode } from '@/lib/qrcode'
 
 async function handler(
   req: NextRequest,
@@ -12,33 +11,26 @@ async function handler(
 
   if (req.method === 'GET') {
     try {
-      const { data: user, error } = await supabase
-        .from('users')
-        .select('id, user_id, email, full_name, phone, role, status, created_at')
+      const { data: event, error } = await supabase
+        .from('events')
+        .select(`
+          *,
+          created_by:users(id, user_id, full_name, email),
+          registrations:event_registrations(*)
+        `)
         .eq('id', id)
         .single()
 
-      if (error || !user) {
+      if (error || !event) {
         return NextResponse.json(
-          { error: 'User not found' },
+          { error: 'Event not found' },
           { status: 404 }
         )
       }
 
-      // Generate QR code for user
-      let qrCode = null
-      try {
-        qrCode = await generateQRCode(user.user_id)
-      } catch (qrError) {
-        console.warn('[v0] QR code generation failed:', qrError)
-      }
-
-      return NextResponse.json({
-        ...user,
-        qrCode,
-      })
+      return NextResponse.json(event)
     } catch (error: any) {
-      console.error('[v0] User GET error:', error)
+      console.error('[v0] Event GET error:', error)
       return NextResponse.json(
         { error: error.message },
         { status: 500 }
@@ -48,41 +40,43 @@ async function handler(
 
   if (req.method === 'PUT') {
     try {
-      const { role, status, fullName, phone } = await req.json()
-
-      // Only admin can change roles and status
-      if ((role || status) && (req as any).auth?.role !== 'admin') {
-        return NextResponse.json(
-          { error: 'Only admins can change role or status' },
-          { status: 403 }
-        )
-      }
+      const {
+        name,
+        description,
+        eventDate,
+        location,
+        imageUrl,
+        maxRegistrations,
+        status,
+      } = await req.json()
 
       const updateData: any = {}
-      if (fullName) updateData.full_name = fullName
-      if (phone) updateData.phone = phone
-      if (role) updateData.role = role
+      if (name) updateData.name = name
+      if (description) updateData.description = description
+      if (eventDate) updateData.event_date = eventDate
+      if (location) updateData.location = location
+      if (imageUrl) updateData.image_url = imageUrl
+      if (maxRegistrations) updateData.max_registrations = maxRegistrations
       if (status) updateData.status = status
       updateData.updated_at = new Date().toISOString()
 
-      const { data: user, error } = await supabase
-        .from('users')
+      const { data: event, error } = await supabase
+        .from('events')
         .update(updateData)
         .eq('id', id)
         .select()
         .single()
 
       if (error) {
-        console.error('[v0] Error updating user:', error)
         return NextResponse.json(
-          { error: 'Failed to update user' },
+          { error: 'Failed to update event' },
           { status: 500 }
         )
       }
 
-      return NextResponse.json(user)
+      return NextResponse.json(event)
     } catch (error: any) {
-      console.error('[v0] User PUT error:', error)
+      console.error('[v0] Event PUT error:', error)
       return NextResponse.json(
         { error: error.message },
         { status: 500 }
@@ -93,21 +87,20 @@ async function handler(
   if (req.method === 'DELETE') {
     try {
       const { error } = await supabase
-        .from('users')
+        .from('events')
         .delete()
         .eq('id', id)
 
       if (error) {
-        console.error('[v0] Error deleting user:', error)
         return NextResponse.json(
-          { error: 'Failed to delete user' },
+          { error: 'Failed to delete event' },
           { status: 500 }
         )
       }
 
-      return NextResponse.json({ message: 'User deleted successfully' })
+      return NextResponse.json({ message: 'Event deleted successfully' })
     } catch (error: any) {
-      console.error('[v0] User DELETE error:', error)
+      console.error('[v0] Event DELETE error:', error)
       return NextResponse.json(
         { error: error.message },
         { status: 500 }
