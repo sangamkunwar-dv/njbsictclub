@@ -23,13 +23,13 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    // Fetch fresh user data from database
     const supabase = getSupabaseServer()
+
     const { data: user, error } = await supabase
       .from('users')
       .select('id, user_id, email, full_name, role, status')
       .eq('user_id', decoded.userId)
-      .single()
+      .maybeSingle()
 
     if (error || !user) {
       return NextResponse.json(
@@ -39,13 +39,22 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({
-      ...user,
+      success: true,
+      user: {
+        id: user.id,
+        userId: user.user_id,
+        email: user.email,
+        fullName: user.full_name,
+        role: user.role,
+        status: user.status,
+      },
       token: decoded,
     })
   } catch (error: any) {
-    console.error('[v0] Auth me error:', error)
+    console.error('[auth me error]', error)
+
     return NextResponse.json(
-      { error: 'Failed to verify user' },
+      { error: error?.message || 'Failed to verify user' },
       { status: 500 }
     )
   }
