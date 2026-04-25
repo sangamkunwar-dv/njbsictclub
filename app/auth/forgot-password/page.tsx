@@ -53,6 +53,8 @@ export default function ForgotPasswordPage() {
       }
 
       setSuccess(true)
+      // Store email for reset-password page
+      localStorage.setItem('resetEmail', email)
       setEmail('')
     } catch (err: any) {
       setError(err.message)

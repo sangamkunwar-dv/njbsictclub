@@ -1,271 +1,242 @@
-# Quick Start Guide - Contact Messages & Admin Replies
+# NJBS ICT Club - Quick Start (Supabase)
 
-## 🚀 Get Started in 5 Minutes
+## ⚡ Setup in 3 Steps
 
-### 1. Set Up Environment Variables
+### Step 1: Create Supabase Tables
 
-Create `.env.local` in project root:
+1. Go to https://app.supabase.com → Open your project
+2. Click **"SQL Editor"** from left sidebar
+3. Click **"New Query"**
+4. **Copy and paste ALL of this code**, then click **"Run"**:
 
-```env
-# Database (REQUIRED)
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/njbsictclub
+```sql
+-- Users table
+CREATE TABLE IF NOT EXISTS public.users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id VARCHAR(20) UNIQUE NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  full_name VARCHAR(255),
+  phone VARCHAR(20),
+  role VARCHAR(50) DEFAULT 'member' CHECK (role IN ('member', 'admin', 'moderator')),
+  status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'suspended')),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
 
-# Auth (REQUIRED)
-JWT_SECRET=change_me_to_random_secret
+CREATE INDEX IF NOT EXISTS idx_users_email ON public.users(email);
+CREATE INDEX IF NOT EXISTS idx_users_user_id ON public.users(user_id);
 
-# Email Service (pick ONE)
-# Option A: Resend (Recommended - easiest)
-RESEND_API_KEY=re_your_api_key_here
+-- Password reset tokens
+CREATE TABLE IF NOT EXISTS public.reset_tokens (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+  email VARCHAR(255) NOT NULL,
+  code VARCHAR(6) NOT NULL,
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  used_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
 
-# Option B: SendGrid
-# SENDGRID_API_KEY=SG.your_api_key_here
+CREATE INDEX IF NOT EXISTS idx_reset_tokens_email ON public.reset_tokens(email);
+CREATE INDEX IF NOT EXISTS idx_reset_tokens_code ON public.reset_tokens(code);
 
-# Email settings
-EMAIL_FROM=noreply@njbsictclub.com
-ADMIN_EMAIL=admin@njbsictclub.com
+-- Projects table
+CREATE TABLE IF NOT EXISTS public.projects (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  image_url VARCHAR(500),
+  status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'archived')),
+  created_by UUID REFERENCES public.users(id) ON DELETE SET NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_projects_created_by ON public.projects(created_by);
+
+-- Events table
+CREATE TABLE IF NOT EXISTS public.events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  event_date TIMESTAMP WITH TIME ZONE,
+  location VARCHAR(500),
+  image_url VARCHAR(500),
+  max_registrations INTEGER,
+  status VARCHAR(50) DEFAULT 'upcoming' CHECK (status IN ('upcoming', 'ongoing', 'completed', 'cancelled')),
+  created_by UUID REFERENCES public.users(id) ON DELETE SET NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_events_date ON public.events(event_date);
+
+-- Event registrations (WITH NAME, EMAIL, PHONE, MESSAGE)
+CREATE TABLE IF NOT EXISTS public.event_registrations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_id UUID NOT NULL REFERENCES public.events(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES public.users(id) ON DELETE SET NULL,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  phone VARCHAR(20),
+  message TEXT,
+  status VARCHAR(50) DEFAULT 'registered' CHECK (status IN ('registered', 'attended', 'cancelled', 'no-show')),
+  registered_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_event_registrations_event_id ON public.event_registrations(event_id);
+CREATE INDEX IF NOT EXISTS idx_event_registrations_user_id ON public.event_registrations(user_id);
+
+-- Members projects
+CREATE TABLE IF NOT EXISTS public.members_projects (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  project_id UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
+  role VARCHAR(50) DEFAULT 'member',
+  joined_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_members_projects_user_id ON public.members_projects(user_id);
+CREATE INDEX IF NOT EXISTS idx_members_projects_project_id ON public.members_projects(project_id);
+
+-- Messages table
+CREATE TABLE IF NOT EXISTS public.messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  content TEXT NOT NULL,
+  message_type VARCHAR(50) DEFAULT 'announcement',
+  created_by UUID REFERENCES public.users(id) ON DELETE SET NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_messages_created_at ON public.messages(created_at);
 ```
 
-### 2. Get Email Service API Key
+**✅ If you see "Success" - great! Continue to Step 2**
 
-**Choose Option A or B:**
+### Step 2: Create Admin User
 
-#### Option A: Resend (Recommended) ⭐
-```
-1. Go to https://resend.com
-2. Click "Sign Up" (free tier)
-3. Verify your email
-4. Go to "API Keys"
-5. Copy the key starting with "re_"
-6. Add to .env.local as RESEND_API_KEY
-```
+Still in SQL Editor, **run this code** to create the admin account:
 
-#### Option B: SendGrid
-```
-1. Go to https://sendgrid.com
-2. Create account
-3. Go to Settings → API Keys
-4. Create API Key with "Mail Send" permission
-5. Copy key starting with "SG."
-6. Verify your sender email address
-7. Add to .env.local as SENDGRID_API_KEY
+```sql
+INSERT INTO public.users (user_id, email, password_hash, full_name, role, status)
+VALUES (
+  'NJBS-' || to_char(NOW(), 'YYYYMMDDHH24MISS'),
+  'sangamkunwar48@gmail.com',
+  '$2b$10$bNuqLw0iW7A2ov4RLVI6gu7.cjJuJ0FbGKBRN6dRSJ.7QqX1T8/Q2',
+  'Admin User',
+  'admin',
+  'active'
+) ON CONFLICT (email) DO NOTHING;
 ```
 
-### 3. Test Locally
+**Admin Credentials:**
+```
+Email: sangamkunwar48@gmail.com
+Password: Admin@123
+```
+
+⚠️ **Change this password after first login!**
+
+### Step 3: Set Environment Variables
+
+Your Supabase credentials are already in Vercel/your project. Just verify they exist in your environment.
+
+**If you're running locally, add to `.env.local`:**
+
+```
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+JWT_SECRET=your_secret_key
+```
+
+Get these from Supabase → Project Settings → API
+
+---
+
+## 🚀 Run It!
 
 ```bash
 npm run dev
-
-# Open browser:
-# http://localhost:3000/contact → Submit test message
-# http://localhost:3000/admin → View as admin (if admin role)
 ```
 
-### 4. Deploy to Vercel
-
-```bash
-# Commit your changes
-git add -A
-git commit -m "Add contact messages system"
-git push origin main
-
-# Vercel auto-deploys!
-
-# Then add environment variables:
-# 1. Go to Vercel Dashboard
-# 2. Select your project
-# 3. Settings → Environment Variables
-# 4. Add all variables from .env.local
-# 5. Click "Save and Redeploy"
-```
-
-### 5. Test in Production
-
-```
-Visit: https://your-domain.com/contact
-→ Submit test message
-→ Check admin panel for message
-→ Send reply
-→ User receives email
-```
+Visit `http://localhost:3000`
 
 ---
 
-## 📧 Email Service Setup Details
+## 📋 What You Get
 
-### Resend (Free Tier)
-- 100 emails/day (plenty for a club)
-- Easiest for Vercel
-- No SMTP configuration needed
-- [Get API Key](https://resend.com)
-
-### SendGrid (Free Tier)
-- 100 emails/day
-- More features available
-- Industry standard
-- [Get API Key](https://sendgrid.com)
+✅ **User Registration** - Sign up with email/password  
+✅ **User Login** - Secure authentication  
+✅ **Password Reset** - 6-digit code verification  
+✅ **Event Registration** - Users register with name, email, phone, message  
+✅ **Admin Dashboard** - View all registrations and messages  
+✅ **QR Code Generation** - Each member gets a unique QR code  
+✅ **Role Management** - Assign member/admin/moderator roles
 
 ---
 
-## 💾 Get MongoDB
+## 🎯 Test It
 
-If you don't have MongoDB:
+**1. Signup:** Go to `/auth/signup` and create a test account
 
-```
-1. Go to https://www.mongodb.com/cloud/atlas
-2. Create free account
-3. Create free cluster
-4. Create database user
-5. Get connection string
-6. Add to MONGODB_URI in .env.local
-```
+**2. Create Event:** Login as admin and go to `/admin` → Events tab → Create Event
 
-[Detailed MongoDB Setup](./CONTACT_MESSAGES_SETUP.md)
+**3. Register for Event:** Find event, click "Register" and fill:
+   - Name
+   - Email
+   - Phone
+   - Message (optional)
 
----
-
-## 🔑 Environment Variables Explained
-
-```env
-# MONGODB_URI
-# Your database connection string
-# Format: mongodb+srv://user:password@cluster.mongodb.net/dbname
-# Get from: MongoDB Atlas dashboard
-
-# JWT_SECRET
-# Secret key for authentication tokens
-# Generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-
-# RESEND_API_KEY or SENDGRID_API_KEY
-# Email service API key (choose one)
-# Resend: starts with "re_"
-# SendGrid: starts with "SG."
-
-# EMAIL_FROM
-# Email address shown as sender
-# Can be: noreply@yourdomain.com
-
-# ADMIN_EMAIL
-# Email for admin notifications (optional)
-```
+**4. View Registrations:** Admin panel → Events → Click event → See all registrations with messages
 
 ---
 
-## 🧪 Testing the System
+## ❌ If You Get "Could not find the table 'public.users'"
 
-### Test 1: Submit Contact Message
-```
-1. Go to /contact
-2. Fill form (all fields required):
-   - Name: "John Doe"
-   - Email: "john@example.com"
-   - Subject: "Test Message"
-   - Message: "This is a test"
-3. Click Submit
-4. Should see "Thank you" message
-```
-
-### Test 2: View in Admin Dashboard
-```
-1. Log in as admin user
-2. Go to /admin
-3. Click "Messages" tab
-4. Should see your test message
-5. Status should be "new" (red badge)
-```
-
-### Test 3: Send Reply
-```
-1. Click message to select it
-2. Message marked as "read" (yellow badge)
-3. Scroll to reply section
-4. Type reply: "Thanks for contacting us!"
-5. Click "Send Reply"
-6. Should see "Reply sent successfully"
-7. Check email for received reply
-```
+This means the tables weren't created:
+1. Go back to Step 1
+2. Go to Supabase SQL Editor
+3. Make sure you ran the CREATE TABLE code
+4. Refresh your app after
 
 ---
 
-## ❌ Common Issues
+## 🔗 Key Routes
 
-### Issue: "MONGODB_URI is not defined"
-**Fix:** Add MONGODB_URI to .env.local
-
-### Issue: Email not sending
-**Check:**
-1. API key is correct (no typos)
-2. For Resend: email is verified
-3. For SendGrid: sender email is verified
-4. Check spam folder
-
-### Issue: Can't see Messages tab
-**Check:**
-1. Logged in as admin user
-2. User has `role: 'admin'` in database
-3. Try logging out and back in
-
-### Issue: Vercel build fails
-**Check:**
-1. All required env vars are set in Vercel
-2. Run `npm run build` locally to test
-3. Check build logs in Vercel dashboard
-
-[Full Troubleshooting Guide](./TROUBLESHOOTING.md)
+| Route | Purpose |
+|-------|---------|
+| `/` | Homepage |
+| `/auth/login` | Login page |
+| `/auth/signup` | Sign up page |
+| `/admin` | Admin dashboard |
+| `/api/auth/login` | Login endpoint |
+| `/api/auth/signup` | Signup endpoint |
+| `/api/events/[id]/register` | Register for event |
+| `/api/admin/events/[id]/registrations` | View all registrations |
 
 ---
 
-## 📁 Key Files
+## ✅ Quick Checklist
 
-```
-/api/contact/route.ts           → Receives messages from form
-/api/admin/messages/            → Admin API endpoints
-/components/admin/messages.tsx  → Admin dashboard UI
-/models/Message.ts              → Database schema
-.env.example                    → Copy to .env.local
-CONTACT_MESSAGES_SETUP.md       → Detailed setup guide
-TROUBLESHOOTING.md              → Common issues
-```
+- [ ] Created all tables in Supabase
+- [ ] Created admin user
+- [ ] Can login with admin credentials
+- [ ] Can create event in admin panel
+- [ ] Can register for event
+- [ ] Can see registration with message in admin panel
+- [ ] Email/password reset works
 
 ---
 
-## ✅ Deployment Checklist
+## 📚 Full Documentation
 
-- [ ] Created .env.local with all required variables
-- [ ] Tested locally with `npm run dev`
-- [ ] Submitted test message on /contact
-- [ ] Viewed message in admin panel
-- [ ] Sent reply and received email
-- [ ] Ran `npm run build` successfully
-- [ ] Pushed to GitHub
-- [ ] Added environment variables to Vercel
-- [ ] Tested in production
+For detailed info, see:
+- `SETUP_GUIDE.md` - Complete setup instructions
+- `TROUBLESHOOTING.md` - Common issues and fixes
 
 ---
 
-## 🎉 You're Done!
-
-Your contact messages system is ready to use:
-
-✅ Users can submit messages
-✅ Admins can view in dashboard
-✅ Admins can reply via email
-✅ Emails sent automatically
-✅ Status tracking (new/read/replied)
-
-**Next steps:**
-- Monitor messages in admin panel
-- Respond to user inquiries
-- Monitor email service usage
-
----
-
-## 📖 Need More Help?
-
-- [Full Setup Guide](./CONTACT_MESSAGES_SETUP.md)
-- [Troubleshooting](./TROUBLESHOOTING.md)
-- [Features Overview](./FEATURES_IMPLEMENTED.md)
-- [Deployment Guide](./DEPLOYMENT.md)
-
----
-
-**Questions?** Check the documentation files above or review the error messages in browser console/Vercel logs.
+**You're all set!** 🎉

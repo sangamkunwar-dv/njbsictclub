@@ -53,6 +53,7 @@ function LoginForm() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+
     if (!validateForm()) return
 
     setLoading(true)
@@ -63,22 +64,23 @@ function LoginForm() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
+        credentials: 'include', // REQUIRED
       })
 
       const data = await res.json()
+
       if (!res.ok) {
-        throw new Error(data.error || 'Invalid email or password')
+        throw new Error(data.error)
       }
 
-      // Give success message before redirect
-      setLoading(false)
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      const redirectUrl = data.user.role === 'admin' ? '/admin' : '/dashboard'
+      const redirectUrl =
+        data.user.role === 'admin' ? '/admin' : '/dashboard'
+
       router.push(redirectUrl)
+
     } catch (err: any) {
-      console.error('[v0] Login error:', err)
-      setError(err.message || 'Login failed. Please try again.')
+      setError(err.message)
+    } finally {
       setLoading(false)
     }
   }
@@ -195,8 +197,8 @@ function LoginForm() {
               <label htmlFor="password" className="block text-sm font-semibold text-gray-700">
                 Password
               </label>
-              <Link 
-                href="/auth/forgot-password" 
+              <Link
+                href="/auth/forgot-password"
                 className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors"
               >
                 Forgot?
@@ -259,8 +261,8 @@ function LoginForm() {
         {/* Footer */}
         <p className="text-center mt-6 text-gray-600 text-sm">
           Don&apos;t have an account?{' '}
-          <Link 
-            href="/auth/signup" 
+          <Link
+            href="/auth/signup"
             className="text-blue-600 hover:text-blue-700 font-semibold transition-colors"
           >
             Create one now

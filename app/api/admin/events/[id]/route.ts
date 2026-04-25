@@ -11,26 +11,26 @@ async function handler(
 
   if (req.method === 'GET') {
     try {
-      const { data: project, error } = await supabase
-        .from('projects')
+      const { data: event, error } = await supabase
+        .from('events')
         .select(`
           *,
           created_by:users(id, user_id, full_name, email),
-          members:members_projects(count)
+          registrations:event_registrations(*)
         `)
         .eq('id', id)
         .single()
 
-      if (error || !project) {
+      if (error || !event) {
         return NextResponse.json(
-          { error: 'Project not found' },
+          { error: 'Event not found' },
           { status: 404 }
         )
       }
 
-      return NextResponse.json(project)
+      return NextResponse.json(event)
     } catch (error: any) {
-      console.error('[v0] Project GET error:', error)
+      console.error('[v0] Event GET error:', error)
       return NextResponse.json(
         { error: error.message },
         { status: 500 }
@@ -40,17 +40,28 @@ async function handler(
 
   if (req.method === 'PUT') {
     try {
-      const { name, description, imageUrl, status } = await req.json()
+      const {
+        name,
+        description,
+        eventDate,
+        location,
+        imageUrl,
+        maxRegistrations,
+        status,
+      } = await req.json()
 
       const updateData: any = {}
       if (name) updateData.name = name
       if (description) updateData.description = description
+      if (eventDate) updateData.event_date = eventDate
+      if (location) updateData.location = location
       if (imageUrl) updateData.image_url = imageUrl
+      if (maxRegistrations) updateData.max_registrations = maxRegistrations
       if (status) updateData.status = status
       updateData.updated_at = new Date().toISOString()
 
-      const { data: project, error } = await supabase
-        .from('projects')
+      const { data: event, error } = await supabase
+        .from('events')
         .update(updateData)
         .eq('id', id)
         .select()
@@ -58,14 +69,14 @@ async function handler(
 
       if (error) {
         return NextResponse.json(
-          { error: 'Failed to update project' },
+          { error: 'Failed to update event' },
           { status: 500 }
         )
       }
 
-      return NextResponse.json(project)
+      return NextResponse.json(event)
     } catch (error: any) {
-      console.error('[v0] Project PUT error:', error)
+      console.error('[v0] Event PUT error:', error)
       return NextResponse.json(
         { error: error.message },
         { status: 500 }
@@ -76,20 +87,20 @@ async function handler(
   if (req.method === 'DELETE') {
     try {
       const { error } = await supabase
-        .from('projects')
+        .from('events')
         .delete()
         .eq('id', id)
 
       if (error) {
         return NextResponse.json(
-          { error: 'Failed to delete project' },
+          { error: 'Failed to delete event' },
           { status: 500 }
         )
       }
 
-      return NextResponse.json({ message: 'Project deleted successfully' })
+      return NextResponse.json({ message: 'Event deleted successfully' })
     } catch (error: any) {
-      console.error('[v0] Project DELETE error:', error)
+      console.error('[v0] Event DELETE error:', error)
       return NextResponse.json(
         { error: error.message },
         { status: 500 }

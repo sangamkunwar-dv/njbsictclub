@@ -74,10 +74,21 @@ export default function ResetPasswordPage() {
     setError('')
 
     try {
+      // Get email from URL params or session
+      const searchParams = new URLSearchParams(window.location.search)
+      const email = searchParams.get('email') || localStorage.getItem('resetEmail') || ''
+
+      if (!email) {
+        setError('Email not found. Please request a password reset again.')
+        setLoading(false)
+        return
+      }
+
       const res = await fetch('/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          email,
           code,
           password,
         }),
@@ -90,6 +101,7 @@ export default function ResetPasswordPage() {
       }
 
       setSuccess(true)
+      localStorage.removeItem('resetEmail')
       setTimeout(() => {
         router.push('/auth/login')
       }, 2000)

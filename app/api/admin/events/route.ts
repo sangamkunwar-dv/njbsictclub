@@ -8,24 +8,25 @@ async function handler(req: NextRequest) {
 
   if (req.method === 'GET') {
     try {
-      const { data: projects, error } = await supabase
-        .from('projects')
+      const { data: events, error } = await supabase
+        .from('events')
         .select(`
           *,
-          created_by:users(id, user_id, full_name, email)
+          created_by:users(id, user_id, full_name, email),
+          registrations:event_registrations(count)
         `)
-        .order('created_at', { ascending: false })
+        .order('event_date', { ascending: true })
 
       if (error) {
         return NextResponse.json(
-          { error: 'Failed to fetch projects' },
+          { error: 'Failed to fetch events' },
           { status: 500 }
         )
       }
 
-      return NextResponse.json(projects || [])
+      return NextResponse.json(events || [])
     } catch (error: any) {
-      console.error('[v0] Projects GET error:', error)
+      console.error('[v0] Events GET error:', error)
       return NextResponse.json(
         { error: error.message },
         { status: 500 }
@@ -35,21 +36,32 @@ async function handler(req: NextRequest) {
 
   if (req.method === 'POST') {
     try {
-      const { name, description, imageUrl, status = 'active' } = await req.json()
+      const {
+        name,
+        description,
+        eventDate,
+        location,
+        imageUrl,
+        maxRegistrations,
+        status = 'upcoming',
+      } = await req.json()
 
-      if (!name) {
+      if (!name || !eventDate) {
         return NextResponse.json(
-          { error: 'Project name is required' },
+          { error: 'Event name and date are required' },
           { status: 400 }
         )
       }
 
-      const { data: project, error } = await supabase
-        .from('projects')
+      const { data: event, error } = await supabase
+        .from('events')
         .insert({
           name,
           description,
+          event_date: eventDate,
+          location,
           image_url: imageUrl,
+          max_registrations: maxRegistrations,
           status,
           created_by: auth.userId,
         })
@@ -57,16 +69,16 @@ async function handler(req: NextRequest) {
         .single()
 
       if (error) {
-        console.error('[v0] Error creating project:', error)
+        console.error('[v0] Error creating event:', error)
         return NextResponse.json(
-          { error: 'Failed to create project' },
+          { error: 'Failed to create event' },
           { status: 500 }
         )
       }
 
-      return NextResponse.json(project, { status: 201 })
+      return NextResponse.json(event, { status: 201 })
     } catch (error: any) {
-      console.error('[v0] Projects POST error:', error)
+      console.error('[v0] Events POST error:', error)
       return NextResponse.json(
         { error: error.message },
         { status: 500 }

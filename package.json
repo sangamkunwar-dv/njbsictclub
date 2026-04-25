@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "setup:db": "node --env-file-if-exists=/vercel/share/.env.project scripts/setup-database.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

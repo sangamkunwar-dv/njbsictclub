@@ -38,7 +38,7 @@ export default function AdminPage() {
     }
   }, [user, loading])
 
-  // ✅ NEW: Admin check via API (MongoDB)
+  // ✅ Admin check via API (Supabase)
   const checkAdminAccess = async () => {
     if (!user) {
       router.push('/auth/login')
@@ -49,19 +49,19 @@ export default function AdminPage() {
       const res = await fetch('/api/auth/me')
       const data = await res.json()
 
-      const isAdminUser =
-        data?.role === 'admin' ||
-        user.email === 'sangamkunwar48@gmail.com'
+      // Check if user is admin
+      const isAdminUser = data?.role === 'admin'
 
       if (isAdminUser) {
         setIsAdmin(true)
         await fetchStats()
       } else {
-        router.push('/')
+        console.warn('[v0] User is not admin:', data?.role)
+        router.push('/dashboard')
       }
     } catch (error) {
-      console.error('[Admin error]', error)
-      router.push('/')
+      console.error('[v0] Admin access check error:', error)
+      router.push('/auth/login')
     }
   }
 
