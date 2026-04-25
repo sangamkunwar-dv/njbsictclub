@@ -102,13 +102,19 @@ function SignupForm() {
       })
 
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Signup failed')
+      if (!res.ok) {
+        throw new Error(data.error || 'Signup failed')
+      }
+
+      // Show success state before redirecting
+      setLoading(false)
+      await new Promise(resolve => setTimeout(resolve, 500))
 
       const redirectUrl = data.user.role === 'admin' ? '/admin' : '/dashboard'
       router.push(redirectUrl)
     } catch (err: any) {
-      setError(err.message)
-    } finally {
+      console.error('[v0] Signup error:', err)
+      setError(err.message || 'Signup failed. Please try again.')
       setLoading(false)
     }
   }

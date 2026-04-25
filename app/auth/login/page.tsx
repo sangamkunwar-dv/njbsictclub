@@ -66,13 +66,19 @@ function LoginForm() {
       })
 
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Invalid email or password')
+      if (!res.ok) {
+        throw new Error(data.error || 'Invalid email or password')
+      }
 
+      // Give success message before redirect
+      setLoading(false)
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
       const redirectUrl = data.user.role === 'admin' ? '/admin' : '/dashboard'
       router.push(redirectUrl)
     } catch (err: any) {
-      setError(err.message)
-    } finally {
+      console.error('[v0] Login error:', err)
+      setError(err.message || 'Login failed. Please try again.')
       setLoading(false)
     }
   }
