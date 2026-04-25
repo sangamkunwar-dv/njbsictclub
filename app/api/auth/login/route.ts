@@ -16,8 +16,16 @@ export async function POST(req: Request) {
 
     if (!result.success) {
       return NextResponse.json(
-        { error: result.error },
+        { error: result.error || 'Authentication failed' },
         { status: 401 }
+      )
+    }
+
+    // ✅ SAFE CHECK (fix for build error)
+    if (!result.token) {
+      return NextResponse.json(
+        { error: 'Token not generated' },
+        { status: 500 }
       )
     }
 
@@ -29,7 +37,7 @@ export async function POST(req: Request) {
     res.cookies.set('token', result.token, {
       httpOnly: true,
       secure: true,
-      sameSite: 'none', // 🔴 IMPORTANT for cross-domain requests
+      sameSite: 'none',
       path: '/',
       maxAge: 7 * 24 * 60 * 60,
     })
@@ -37,7 +45,7 @@ export async function POST(req: Request) {
     return res
   } catch (error: any) {
     return NextResponse.json(
-      { error: error.message || 'Login failed' },
+      { error: error?.message || 'Login failed' },
       { status: 500 }
     )
   }
