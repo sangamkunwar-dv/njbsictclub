@@ -4,10 +4,10 @@ import { verifyToken } from '@/lib/auth'
 
 export async function GET() {
   try {
-    // 1. Await the cookies() function
+    // 1. Await the cookies() function - This is the fix!
     const cookieStore = await cookies();
     
-    // 2. Access the token
+    // 2. Access the 'token' from the store
     const token = cookieStore.get('token')?.value;
 
     if (!token) {
