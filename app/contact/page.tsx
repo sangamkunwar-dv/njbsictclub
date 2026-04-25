@@ -34,19 +34,20 @@ export default function ContactPage() {
     setError('')
 
     try {
-      const { error: submitError } = await supabase
-        .from('contact_submissions')
-        .insert([
-          {
-            name: formData.name,
-            email: formData.email,
-            subject: formData.subject,
-            message: formData.message,
-            status: 'new',
-          }
-        ])
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          subject: formData.subject,
+          message: formData.message,
+        }),
+      })
 
-      if (submitError) throw submitError
+      if (!response.ok) {
+        throw new Error('Failed to send message')
+      }
 
       setSuccess(true)
       setFormData({ name: '', email: '', subject: '', message: '' })

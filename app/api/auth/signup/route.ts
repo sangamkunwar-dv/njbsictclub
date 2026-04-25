@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     const hashedPassword = await bcrypt.hash(password, 10)
     
     // Generate unique user ID
-    let userID: string
+    let userID: string = generateUserID()
     let userExists = true
     let attempts = 0
     while (userExists && attempts < 10) {

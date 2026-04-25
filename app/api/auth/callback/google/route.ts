@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
 
     if (!user) {
       // Generate unique user ID in format NJBS-XXXXXXXX
-      let userId: string
+      let userId: string = generateUserID()
       let userExists = true
       let attempts = 0
       while (userExists && attempts < 10) {

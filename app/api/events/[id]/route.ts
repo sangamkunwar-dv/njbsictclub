@@ -7,12 +7,13 @@ import { Event } from '@/models/Event'
  */
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB()
 
-    const event = await Event.findById(params.id)
+    const { id } = await params
+    const event = await Event.findById(id)
 
     if (!event) {
       return NextResponse.json({ error: 'Event not found' }, { status: 404 })
@@ -29,15 +30,16 @@ export async function GET(
  */
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB()
 
+    const { id } = await params
     const body = await req.json()
 
     const updated = await Event.findByIdAndUpdate(
-      params.id,
+      id,
       body,
       { new: true }
     )
@@ -57,12 +59,13 @@ export async function PUT(
  */
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB()
 
-    const deleted = await Event.findByIdAndDelete(params.id)
+    const { id } = await params
+    const deleted = await Event.findByIdAndDelete(id)
 
     if (!deleted) {
       return NextResponse.json({ error: 'Event not found' }, { status: 404 })
