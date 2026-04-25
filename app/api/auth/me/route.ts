@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken, getTokenFromRequest } from '@/lib/auth-middleware'
+import { verifyToken } from '@/lib/auth'
+import { getTokenFromRequest } from '@/lib/auth-middleware'
 import { getSupabaseServer } from '@/lib/supabase-server'
 
 export async function GET(req: NextRequest) {
