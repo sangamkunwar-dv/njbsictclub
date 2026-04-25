@@ -5,7 +5,6 @@ export async function POST(req: Request) {
   try {
     const { email, password, fullName } = await req.json()
 
-    // Validate inputs
     if (!email || !password || !fullName) {
       return NextResponse.json(
         { error: 'Missing required fields' },
@@ -13,7 +12,6 @@ export async function POST(req: Request) {
       )
     }
 
-    // Validate password strength
     if (password.length < 8) {
       return NextResponse.json(
         { error: 'Password must be at least 8 characters' },
@@ -21,7 +19,6 @@ export async function POST(req: Request) {
       )
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
       return NextResponse.json(
@@ -30,17 +27,16 @@ export async function POST(req: Request) {
       )
     }
 
-    // Create user
     const result = await createUser(email, password, fullName)
 
-    if (!result.success) {
+    if (!result.success || !result.user) {
       return NextResponse.json(
-        { error: result.error },
+        { error: result.error || 'User creation failed' },
         { status: 400 }
       )
     }
 
-    // Create JWT token
+    // ✅ SAFE access (FIX)
     const token = createToken(result.user.userId, email, 'member')
 
     const res = NextResponse.json({
@@ -64,9 +60,10 @@ export async function POST(req: Request) {
 
     return res
   } catch (error: any) {
-    console.error('[v0] Signup error:', error)
+    console.error('[signup error]', error)
+
     return NextResponse.json(
-      { error: error.message || 'Signup failed' },
+      { error: error?.message || 'Signup failed' },
       { status: 500 }
     )
   }
