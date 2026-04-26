@@ -28,8 +28,8 @@ export async function POST(req: Request) {
 
     res.cookies.set('token', result.token, {
       httpOnly: true,
-      secure: false, // IMPORTANT for localhost
-      sameSite: 'lax',
+      secure: true,
+      sameSite: 'none', // 🔴 IMPORTANT for cross-domain requests
       path: '/',
       maxAge: 7 * 24 * 60 * 60,
     })
