@@ -43,25 +43,37 @@ export const serializeEvent = (e: Event) => ({
   updatedAt: e.updatedAt,
 });
 
-export const serializeProject = (p: Project) => ({
-  _id: p.id,
-  id: p.id,
-  name: p.name,
-  title: p.name,
-  description: p.description,
-  status: p.status,
-  startDate: p.startDate,
-  endDate: p.endDate,
-  technologies: p.technologies,
-  github_url: p.githubUrl,
-  githubUrl: p.githubUrl,
-  github: p.githubUrl,
-  demo_url: p.demoUrl,
-  demoUrl: p.demoUrl,
-  link: p.demoUrl,
-  createdAt: p.createdAt,
-  updatedAt: p.updatedAt,
-});
+const splitTechnologies = (value: string | null | undefined): string[] => {
+  if (!value) return [];
+  return value
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean);
+};
+
+export const serializeProject = (p: Project) => {
+  const techArray = splitTechnologies(p.technologies);
+  return {
+    _id: p.id,
+    id: p.id,
+    name: p.name,
+    title: p.name,
+    description: p.description,
+    status: p.status,
+    startDate: p.startDate,
+    endDate: p.endDate,
+    technologies: techArray,
+    technologiesText: p.technologies,
+    github_url: p.githubUrl,
+    githubUrl: p.githubUrl,
+    github: p.githubUrl,
+    demo_url: p.demoUrl,
+    demoUrl: p.demoUrl,
+    link: p.demoUrl,
+    createdAt: p.createdAt,
+    updatedAt: p.updatedAt,
+  };
+};
 
 export const serializeTeam = (t: TeamMember) => ({
   _id: t.id,

@@ -353,7 +353,13 @@ router.post("/admin/messages/:id/reply", async (req, res) => {
     res.status(404).json({ error: "Not found" });
     return;
   }
-  res.json({ success: true, email: updated.email, message: serializeMessage(updated) });
+  const serialized = serializeMessage(updated);
+  res.json({
+    success: true,
+    email: updated.email,
+    message: serialized,
+    data: { email: updated.email, message: serialized },
+  });
 });
 
 router.delete("/admin/messages/:id", async (req, res) => {

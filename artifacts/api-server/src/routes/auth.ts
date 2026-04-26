@@ -34,7 +34,8 @@ router.get("/auth/me", async (req, res) => {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
-  res.json(serializeUser(user));
+  const serialized = serializeUser(user);
+  res.json({ ...serialized, user: serialized });
 });
 
 router.get("/me", async (req, res) => {

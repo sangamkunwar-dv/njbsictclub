@@ -205,7 +205,7 @@ export default function AdminProjects() {
 
             <div className="text-xs text-gray-400 space-y-1">
               <p>Status: {p.status}</p>
-              <p>Tech: {p.technologies}</p>
+              <p>Tech: {Array.isArray(p.technologies) ? p.technologies.join(', ') : p.technologies}</p>
               <p>Start: {p.startDate} | End: {p.endDate}</p>
 
               {p.githubUrl && (
