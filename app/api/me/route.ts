@@ -8,7 +8,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'default-secret-key'
 
 export async function GET() {
   try {
-    const token = (await cookies()).get('token')?.value
+    // ✅ FIXED (removed await)
+    const token = cookies().get('token')?.value
 
     if (!token) {
       return NextResponse.json(
