@@ -6,6 +6,7 @@ export type SocialLinks = {
   twitter?: string;
   linkedin?: string;
   github?: string;
+  website?: string;
 };
 
 export const teamTable = pgTable("team", {

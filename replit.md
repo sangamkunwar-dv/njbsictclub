@@ -45,4 +45,5 @@ See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and pa
 - `src/lib/next-shim.ts` provides `useRouter` / `usePathname` / `useSearchParams` / `redirect` mapped onto wouter so files copied from the Next.js app keep working.
 - Frontend env vars use `import.meta.env.VITE_*` (Vite convention), not `process.env.NEXT_PUBLIC_*`.
 - `JWT_SECRET` is read from the environment in production. In development a random value is generated per process — sessions don't survive an api-server restart unless `JWT_SECRET` is set.
+- Each artifact must be run through its workflow (see "Common commands" above). The Vite config for `ict-club` requires the `PORT` and `BASE_PATH` env vars that the workflow injects automatically — running `vite` directly from a shell will throw. The same applies to the api-server (`PORT`).
 - Original Next.js source (Mongoose models, Supabase client, OAuth callbacks) is preserved in `.migration-backup/` for reference.

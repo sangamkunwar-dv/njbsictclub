@@ -51,7 +51,7 @@ export default function ProjectsPage() {
         return 'bg-green-500/20 text-green-400'
       case 'active':
         return 'bg-blue-500/20 text-blue-400'
-      case 'planning':
+      case 'on-hold':
         return 'bg-yellow-500/20 text-yellow-400'
       default:
         return 'bg-gray-500/20 text-gray-300'
@@ -90,7 +90,7 @@ export default function ProjectsPage() {
 
           {/* FILTER */}
           <div className="flex justify-center gap-3 mb-10 flex-wrap">
-            {['all', 'planning', 'active', 'completed'].map((status) => (
+            {['all', 'active', 'on-hold', 'completed'].map((status) => (
               <button
                 key={status}
                 onClick={() =>

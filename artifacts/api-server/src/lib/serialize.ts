@@ -91,7 +91,7 @@ export const serializeTeam = (t: TeamMember) => ({
   github: t.socialLinks?.github ?? null,
   twitter: t.socialLinks?.twitter ?? null,
   linkedin: t.socialLinks?.linkedin ?? null,
-  website: t.socialLinks?.linkedin ?? null,
+  website: t.socialLinks?.website ?? null,
   skills: t.skills ?? [],
   joinDate: t.joinDate,
   createdAt: t.createdAt,
