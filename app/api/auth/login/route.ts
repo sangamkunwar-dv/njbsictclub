@@ -5,15 +5,13 @@ export async function POST(req: Request) {
   try {
     const { email, password } = await req.json()
 
-    // Validate inputs
     if (!email || !password) {
       return NextResponse.json(
-        { error: 'Email and password are required' },
+        { error: 'Email and password required' },
         { status: 400 }
       )
     }
 
-    // Authenticate user
     const result = await authenticateUser(email, password)
 
     if (!result.success) {
@@ -30,7 +28,7 @@ export async function POST(req: Request) {
 
     res.cookies.set('token', result.token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: false, // IMPORTANT for localhost
       sameSite: 'lax',
       path: '/',
       maxAge: 7 * 24 * 60 * 60,
@@ -38,7 +36,6 @@ export async function POST(req: Request) {
 
     return res
   } catch (error: any) {
-    console.error('[v0] Login error:', error)
     return NextResponse.json(
       { error: error.message || 'Login failed' },
       { status: 500 }

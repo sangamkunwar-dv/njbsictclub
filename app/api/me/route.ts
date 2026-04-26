@@ -4,24 +4,22 @@ import { cookies } from 'next/headers'
 import { connectDB } from '@/lib/mongodb'
 import User from '@/models/User'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'default-secret-key'
-
 export async function GET() {
   try {
-    // ✅ FIXED (removed await)
     const token = cookies().get('token')?.value
 
     if (!token) {
-      return NextResponse.json(
-        { error: 'No token provided' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: 'No token' }, { status: 401 })
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as any
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any
 
     await connectDB()
-    const user = await User.findById(decoded.id)
+
+    // ✅ FIX: use correct field
+    const user = await User.findOne({
+      userId: decoded.userId,
+    })
 
     if (!user) {
       return NextResponse.json(
@@ -34,15 +32,11 @@ export async function GET() {
       user: {
         id: user._id,
         email: user.email,
-        full_name: user.full_name,
         role: user.role,
-        userId: user.userId,
-        avatar: user.avatar,
-        qrCode: user.qrCode,
       },
     })
-  } catch (error: any) {
-    console.error('[v0] Auth error:', error)
+
+  } catch (err) {
     return NextResponse.json(
       { error: 'Unauthorized' },
       { status: 401 }

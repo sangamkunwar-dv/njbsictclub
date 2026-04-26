@@ -62,43 +62,24 @@ function LoginForm() {
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // ✅ REQUIRED for cookies
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
+        credentials: 'include', // REQUIRED
       })
 
-      // ✅ Handle non-JSON safely
-      let data: any = null
-      try {
-        data = await res.json()
-      } catch {
-        data = {}
-      }
+      const data = await res.json()
 
-      // ❌ If login failed
       if (!res.ok) {
-        throw new Error(data?.error || 'Invalid email or password')
+        throw new Error(data.error)
       }
 
-      // ✅ Ensure user exists
-      if (!data?.user) {
-        throw new Error('User data missing in response')
-      }
-
-      // ✅ Small delay (optional but fine)
-      await new Promise((resolve) => setTimeout(resolve, 300))
-
-      // ✅ Safe role check
       const redirectUrl =
-        data.user?.role === 'admin' ? '/admin' : '/dashboard'
+        data.user.role === 'admin' ? '/admin' : '/dashboard'
 
       router.push(redirectUrl)
 
     } catch (err: any) {
-      console.error('Login error:', err)
-      setError(err?.message || 'Login failed. Please try again.')
+      setError(err.message)
     } finally {
       setLoading(false)
     }

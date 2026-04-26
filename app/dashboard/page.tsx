@@ -8,26 +8,15 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const getUser = async () => {
-      try {
-        const res = await fetch('/api/me', {
-          credentials: 'include',   // ✅ send cookies
-          cache: 'no-store',        // ✅ prevent caching
-        })
+      const res = await fetch('/api/me', {
+        credentials: 'include',
+        cache: 'no-store',
+      })
 
-        if (!res.ok) {
-          // ❌ If 401 or error → not logged in
-          setUser(null)
-          return
-        }
+      const data = await res.json()
 
-        const data = await res.json()
-        setUser(data.user || null)
-
-      } catch (err) {
-        setUser(null)
-      } finally {
-        setLoading(false)
-      }
+      setUser(data.user || null)
+      setLoading(false)
     }
 
     getUser()
