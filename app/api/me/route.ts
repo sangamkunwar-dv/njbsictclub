@@ -8,22 +8,40 @@ export async function GET() {
   try {
     const token = cookies().get('token')?.value
 
-    console.log("TOKEN RECEIVED:", token)
-
     if (!token) {
       return NextResponse.json(
-        { error: 'No token found' },
+        { error: 'No token' },
         { status: 401 }
       )
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!)
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET!
+    ) as any
 
-    console.log("DECODED JWT:", decoded)
+    console.log("DECODED:", decoded)
+
+    await connectDB()
+
+    // ✅ FIX: use userId (NOT id)
+    const user = await User.findOne({
+      userId: decoded.userId
+    })
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      )
+    }
 
     return NextResponse.json({
-      ok: true,
-      decoded
+      user: {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+      }
     })
 
   } catch (err) {
