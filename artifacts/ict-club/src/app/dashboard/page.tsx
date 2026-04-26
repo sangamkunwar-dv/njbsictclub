@@ -27,7 +27,7 @@ export default function DashboardPage() {
       <div className="text-center">
 
         <h1 className="text-2xl font-bold">
-          Dashboard ✅
+          Dashboard
         </h1>
 
         {loading ? (

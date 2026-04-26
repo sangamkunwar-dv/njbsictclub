@@ -44,7 +44,7 @@ export default function AdminMessages() {
     setLoading(false)
   }
 
-  // ✅ MARK AS READ
+ 
   const handleMarkAsRead = async (id: string) => {
     try {
       const res = await fetch(`/api/admin/messages/${id}`, {
@@ -63,7 +63,7 @@ export default function AdminMessages() {
     }
   }
 
-  // ✅ DELETE MESSAGE
+ 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this message?')) return
 
@@ -82,7 +82,7 @@ export default function AdminMessages() {
     }
   }
 
-  // ✅ SEND REPLY
+ 
   const handleSendReply = async (id: string) => {
     if (!replyText.trim()) {
       alert('Please enter a reply message')
@@ -127,7 +127,7 @@ export default function AdminMessages() {
 
   const selectedMessage = messages.find(m => m._id === selectedId)
 
-  // ✅ LOADING STATE
+ 
   if (loading) {
     return <div className="text-center py-8">Loading messages...</div>
   }

@@ -40,7 +40,7 @@ export default function AdminEvents() {
     fetchEvents()
   }, [])
 
-  // ✅ FETCH EVENTS (MongoDB API)
+ 
   const fetchEvents = async () => {
     setLoading(true)
     try {
@@ -61,7 +61,7 @@ export default function AdminEvents() {
     }
   }
 
-  // ✅ DELETE
+ 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this event?')) return
 
@@ -80,7 +80,7 @@ export default function AdminEvents() {
     }
   }
 
-  // ✅ EDIT
+ 
   const handleEdit = (event: Event) => {
     const datetime = new Date(event.event_date)
 
@@ -99,7 +99,7 @@ export default function AdminEvents() {
     setShowForm(true)
   }
 
-  // ✅ CREATE / UPDATE
+ 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 

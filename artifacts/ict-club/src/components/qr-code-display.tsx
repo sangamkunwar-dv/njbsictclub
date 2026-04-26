@@ -25,7 +25,7 @@ export function QRCodeDisplay({ value, memberId }: Props) {
     link.href = url
     link.download = `${memberId || 'qr-code'}.png`
 
-    // ✅ IMPORTANT FIX (append to DOM)
+   
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)

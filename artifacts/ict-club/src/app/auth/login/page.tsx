@@ -84,7 +84,7 @@ function LoginForm() {
 
   const handleGoogleLogin = () => {
     const params = new URLSearchParams({
-      client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '',
+      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
       redirect_uri: `${window.location.origin}/api/auth/callback/google`,
       response_type: 'code',
       scope: 'openid email profile',
@@ -94,7 +94,7 @@ function LoginForm() {
 
   const handleGitHubLogin = () => {
     const params = new URLSearchParams({
-      client_id: process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID || '',
+      client_id: import.meta.env.VITE_GITHUB_CLIENT_ID || '',
       redirect_uri: `${window.location.origin}/api/auth/callback/github`,
       scope: 'user:email',
     })

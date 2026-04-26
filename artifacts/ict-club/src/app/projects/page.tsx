@@ -58,7 +58,7 @@ export default function ProjectsPage() {
     }
   }
 
-  // ✅ SAFE TECHNOLOGY PARSER (MAIN FIX)
+ 
   const parseTech = (tech: any): string[] => {
     if (!tech) return []
 

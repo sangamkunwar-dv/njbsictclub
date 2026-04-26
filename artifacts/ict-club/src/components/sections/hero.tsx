@@ -4,7 +4,7 @@ import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 
 export default function Hero() {
-  // 👉 You can change this image path or make it dynamic later
+  
   const showcaseImage = '/njbsgroupphoto.jpeg'; // put image in /public folder
 
   return (
@@ -45,7 +45,7 @@ export default function Hero() {
             className="bg-primary hover:bg-primary/90 text-primary-foreground h-12 text-base"
             asChild
           >
-            <Link href="/signup">
+            <Link href="/auth/signup">
               Explore Our Collective
               <ChevronRight size={18} />
             </Link>

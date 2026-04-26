@@ -13,7 +13,7 @@ export function useAuth() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // ✅ Get current user from API
+ 
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -44,7 +44,7 @@ export function useAuth() {
     fetchUser()
   }, [])
 
-  // ✅ Sign Up (API)
+ 
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
       const res = await fetch('/api/auth/signup', {
@@ -60,7 +60,7 @@ export function useAuth() {
     }
   }
 
-  // ✅ Sign In (API)
+ 
   const signIn = async (email: string, password: string) => {
     try {
       const res = await fetch('/api/auth/login', {
@@ -81,7 +81,7 @@ export function useAuth() {
     }
   }
 
-  // ✅ Sign Out
+ 
   const signOut = async () => {
     try {
       await fetch('/api/auth/logout', {
@@ -95,7 +95,7 @@ export function useAuth() {
     }
   }
 
-  // ❌ OAuth removed (you can add later with Google API)
+  
 
   return {
     user,

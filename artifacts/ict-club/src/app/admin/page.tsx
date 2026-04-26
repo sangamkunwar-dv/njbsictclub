@@ -36,7 +36,7 @@ export default function AdminPage() {
     }
   }, [user, loading])
 
-  // ✅ NEW: Admin check via API (MongoDB)
+ 
   const checkAdminAccess = async () => {
     if (!user) {
       router.push('/auth/login')
@@ -63,7 +63,7 @@ export default function AdminPage() {
     }
   }
 
-  // ✅ NEW: Fetch stats from API
+ 
   const fetchStats = async () => {
     try {
       const res = await fetch('/api/admin/stats')
