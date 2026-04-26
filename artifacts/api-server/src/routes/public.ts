@@ -10,6 +10,11 @@ import {
   insertMessageSchema,
 } from "@workspace/db";
 import { readAuthFromRequest } from "../lib/auth";
+import {
+  serializeEvent,
+  serializeProject,
+  serializeTeam,
+} from "../lib/serialize";
 
 const router: IRouter = Router();
 
@@ -18,7 +23,7 @@ router.get("/events", async (_req, res) => {
     .select()
     .from(eventsTable)
     .orderBy(asc(eventsTable.eventDate));
-  res.json(events);
+  res.json(events.map(serializeEvent));
 });
 
 router.get("/events/:id", async (req, res) => {
@@ -36,15 +41,20 @@ router.get("/events/:id", async (req, res) => {
     res.status(404).json({ error: "Not found" });
     return;
   }
-  res.json(event);
+  res.json(serializeEvent(event));
 });
 
-router.get("/projects", async (_req, res) => {
-  const projects = await db
+router.get("/projects", async (req, res) => {
+  const status = req.query["status"];
+  const rows = await db
     .select()
     .from(projectsTable)
     .orderBy(desc(projectsTable.createdAt));
-  res.json(projects);
+  const filtered =
+    typeof status === "string" && status !== "all"
+      ? rows.filter((p) => p.status === status)
+      : rows;
+  res.json(filtered.map(serializeProject));
 });
 
 router.get("/team", async (_req, res) => {
@@ -52,7 +62,7 @@ router.get("/team", async (_req, res) => {
     .select()
     .from(teamTable)
     .orderBy(asc(teamTable.joinDate));
-  res.json(team);
+  res.json(team.map(serializeTeam));
 });
 
 router.post("/contact", async (req, res) => {

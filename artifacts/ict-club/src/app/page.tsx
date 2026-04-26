@@ -1,4 +1,4 @@
-// Remove 'use client' from here
+
 
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';

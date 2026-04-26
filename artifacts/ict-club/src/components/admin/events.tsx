@@ -44,7 +44,7 @@ export default function AdminEvents() {
   const fetchEvents = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/events')
+      const res = await fetch('/api/admin/events')
 
       if (!res.ok) throw new Error('Failed to fetch')
 
@@ -66,7 +66,7 @@ export default function AdminEvents() {
     if (!confirm('Are you sure you want to delete this event?')) return
 
     try {
-      const res = await fetch(`/api/events/${id}`, {
+      const res = await fetch(`/api/admin/events/${id}`, {
         method: 'DELETE',
       })
 
@@ -123,7 +123,7 @@ export default function AdminEvents() {
     try {
       if (editingId) {
         // UPDATE
-        const res = await fetch(`/api/events/${editingId}`, {
+        const res = await fetch(`/api/admin/events/${editingId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(eventData),
@@ -138,7 +138,7 @@ export default function AdminEvents() {
         setEditingId(null)
       } else {
         // CREATE
-        const res = await fetch('/api/events', {
+        const res = await fetch('/api/admin/events', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(eventData),

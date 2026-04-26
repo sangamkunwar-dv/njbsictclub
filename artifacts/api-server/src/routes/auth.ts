@@ -10,18 +10,31 @@ import {
   readAuthFromRequest,
   generateUserId,
 } from "../lib/auth";
+import { serializeUser } from "../lib/serialize";
 
 const router: IRouter = Router();
 
-router.get("/auth/me", (req, res) => {
+const loadUser = async (id: number) => {
+  const [user] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.id, id))
+    .limit(1);
+  return user;
+};
+
+router.get("/auth/me", async (req, res) => {
   const auth = readAuthFromRequest(req);
   if (!auth) {
-    res.status(401).json({ user: null });
+    res.status(401).json({ error: "Unauthorized" });
     return;
   }
-  res.json({
-    user: { id: auth.id, email: auth.email, role: auth.role },
-  });
+  const user = await loadUser(auth.id);
+  if (!user) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  res.json(serializeUser(user));
 });
 
 router.get("/me", async (req, res) => {
@@ -30,17 +43,12 @@ router.get("/me", async (req, res) => {
     res.status(401).json({ user: null });
     return;
   }
-  const [user] = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.id, auth.id))
-    .limit(1);
+  const user = await loadUser(auth.id);
   if (!user) {
     res.status(404).json({ user: null });
     return;
   }
-  const { password: _password, ...safe } = user;
-  res.json({ user: safe });
+  res.json({ user: serializeUser(user) });
 });
 
 router.post("/auth/signup", async (req, res) => {
@@ -92,15 +100,7 @@ router.post("/auth/signup", async (req, res) => {
   });
   setAuthCookie(res, token);
 
-  res.status(201).json({
-    user: {
-      id: created.id,
-      email: created.email,
-      full_name: created.fullName,
-      role: created.role,
-      userId: created.userId,
-    },
-  });
+  res.status(201).json({ user: serializeUser(created) });
 });
 
 router.post("/auth/login", async (req, res) => {
@@ -134,15 +134,7 @@ router.post("/auth/login", async (req, res) => {
   });
   setAuthCookie(res, token);
 
-  res.json({
-    user: {
-      id: user.id,
-      email: user.email,
-      full_name: user.fullName,
-      role: user.role,
-      userId: user.userId,
-    },
-  });
+  res.json({ user: serializeUser(user) });
 });
 
 router.post("/auth/logout", (_req, res) => {

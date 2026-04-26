@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { count, desc, eq } from "drizzle-orm";
+import { count, desc, eq, sql } from "drizzle-orm";
 import {
   db,
   usersTable,
@@ -9,13 +9,23 @@ import {
   messagesTable,
   attendanceTable,
   settingsTable,
-  insertEventSchema,
-  insertProjectSchema,
-  insertTeamSchema,
   insertSettingsSchema,
-  insertUserSchema,
 } from "@workspace/db";
 import { requireAdmin, hashPassword, generateUserId } from "../lib/auth";
+import {
+  serializeUser,
+  serializeEvent,
+  serializeProject,
+  serializeTeam,
+  serializeMessage,
+  serializeSettings,
+  serializeAttendance,
+  eventInputFromBody,
+  projectInputFromBody,
+  teamInputFromBody,
+  userUpdateFromBody,
+  pickDefined,
+} from "../lib/serialize";
 
 const router: IRouter = Router();
 
@@ -38,28 +48,16 @@ router.get("/admin/stats", async (_req, res) => {
 
 router.get("/admin/users", async (_req, res) => {
   const users = await db
-    .select({
-      id: usersTable.id,
-      email: usersTable.email,
-      fullName: usersTable.fullName,
-      role: usersTable.role,
-      oauthProvider: usersTable.oauthProvider,
-      userId: usersTable.userId,
-      createdAt: usersTable.createdAt,
-    })
+    .select()
     .from(usersTable)
     .orderBy(desc(usersTable.createdAt));
-  res.json(users);
+  res.json(users.map(serializeUser));
 });
 
 router.post("/admin/users", async (req, res) => {
-  const { password, ...rest } = req.body ?? {};
-  const parsed = insertUserSchema.safeParse({
-    ...rest,
-    userId: rest.userId ?? generateUserId(),
-  });
-  if (!parsed.success) {
-    res.status(400).json({ error: "Invalid user", issues: parsed.error.issues });
+  const { email, password, fullName, full_name, role } = req.body ?? {};
+  if (typeof email !== "string") {
+    res.status(400).json({ error: "Email is required" });
     return;
   }
   const passwordHash =
@@ -68,14 +66,43 @@ router.post("/admin/users", async (req, res) => {
       : null;
   const [created] = await db
     .insert(usersTable)
-    .values({ ...parsed.data, password: passwordHash })
+    .values({
+      email: email.toLowerCase(),
+      password: passwordHash,
+      fullName: (fullName ?? full_name) ?? null,
+      role: (role as "member" | "organizer" | "admin" | undefined) ?? "member",
+      oauthProvider: "email",
+      userId: generateUserId(),
+    })
     .returning();
   if (!created) {
     res.status(500).json({ error: "Failed to create user" });
     return;
   }
-  const { password: _p, ...safe } = created;
-  res.status(201).json(safe);
+  res.status(201).json(serializeUser(created));
+});
+
+router.put("/admin/users/:id", async (req, res) => {
+  const id = Number(req.params["id"]);
+  if (!Number.isFinite(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  const update = pickDefined(userUpdateFromBody(req.body));
+  if (Object.keys(update).length === 0) {
+    res.status(400).json({ error: "Nothing to update" });
+    return;
+  }
+  const [updated] = await db
+    .update(usersTable)
+    .set({ ...update, updatedAt: new Date() })
+    .where(eq(usersTable.id, id))
+    .returning();
+  if (!updated) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  res.json(serializeUser(updated));
 });
 
 router.delete("/admin/users/:id", async (req, res) => {
@@ -89,16 +116,31 @@ router.delete("/admin/users/:id", async (req, res) => {
 });
 
 router.get("/admin/events", async (_req, res) => {
-  res.json(await db.select().from(eventsTable));
+  const rows = await db
+    .select()
+    .from(eventsTable)
+    .orderBy(desc(eventsTable.eventDate));
+  res.json(rows.map(serializeEvent));
 });
 router.post("/admin/events", async (req, res) => {
-  const parsed = insertEventSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Invalid payload", issues: parsed.error.issues });
+  const input = eventInputFromBody(req.body);
+  if (!input.title || !input.eventDate) {
+    res.status(400).json({ error: "title and event_date are required" });
     return;
   }
-  const [created] = await db.insert(eventsTable).values(parsed.data).returning();
-  res.status(201).json(created);
+  const [created] = await db
+    .insert(eventsTable)
+    .values({
+      title: input.title,
+      description: input.description,
+      eventDate: input.eventDate,
+      location: input.location,
+      capacity: input.capacity,
+      eventType: input.eventType,
+      imageUrl: input.imageUrl,
+    })
+    .returning();
+  res.status(201).json(created ? serializeEvent(created) : null);
 });
 router.put("/admin/events/:id", async (req, res) => {
   const id = Number(req.params["id"]);
@@ -106,21 +148,21 @@ router.put("/admin/events/:id", async (req, res) => {
     res.status(400).json({ error: "Invalid id" });
     return;
   }
-  const parsed = insertEventSchema.partial().safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Invalid payload", issues: parsed.error.issues });
+  const input = pickDefined(eventInputFromBody(req.body));
+  if (Object.keys(input).length === 0) {
+    res.status(400).json({ error: "Nothing to update" });
     return;
   }
   const [updated] = await db
     .update(eventsTable)
-    .set({ ...parsed.data, updatedAt: new Date() })
+    .set({ ...input, updatedAt: new Date() })
     .where(eq(eventsTable.id, id))
     .returning();
   if (!updated) {
     res.status(404).json({ error: "Not found" });
     return;
   }
-  res.json(updated);
+  res.json(serializeEvent(updated));
 });
 router.delete("/admin/events/:id", async (req, res) => {
   const id = Number(req.params["id"]);
@@ -133,16 +175,32 @@ router.delete("/admin/events/:id", async (req, res) => {
 });
 
 router.get("/admin/projects", async (_req, res) => {
-  res.json(await db.select().from(projectsTable));
+  const rows = await db
+    .select()
+    .from(projectsTable)
+    .orderBy(desc(projectsTable.createdAt));
+  res.json(rows.map(serializeProject));
 });
 router.post("/admin/projects", async (req, res) => {
-  const parsed = insertProjectSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Invalid payload", issues: parsed.error.issues });
+  const input = projectInputFromBody(req.body);
+  if (!input.name) {
+    res.status(400).json({ error: "name is required" });
     return;
   }
-  const [created] = await db.insert(projectsTable).values(parsed.data).returning();
-  res.status(201).json(created);
+  const [created] = await db
+    .insert(projectsTable)
+    .values({
+      name: input.name,
+      description: input.description,
+      status: input.status ?? "active",
+      startDate: input.startDate,
+      endDate: input.endDate,
+      technologies: input.technologies,
+      githubUrl: input.githubUrl,
+      demoUrl: input.demoUrl,
+    })
+    .returning();
+  res.status(201).json(created ? serializeProject(created) : null);
 });
 router.put("/admin/projects/:id", async (req, res) => {
   const id = Number(req.params["id"]);
@@ -150,21 +208,21 @@ router.put("/admin/projects/:id", async (req, res) => {
     res.status(400).json({ error: "Invalid id" });
     return;
   }
-  const parsed = insertProjectSchema.partial().safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Invalid payload", issues: parsed.error.issues });
+  const input = pickDefined(projectInputFromBody(req.body));
+  if (Object.keys(input).length === 0) {
+    res.status(400).json({ error: "Nothing to update" });
     return;
   }
   const [updated] = await db
     .update(projectsTable)
-    .set({ ...parsed.data, updatedAt: new Date() })
+    .set({ ...input, updatedAt: new Date() })
     .where(eq(projectsTable.id, id))
     .returning();
   if (!updated) {
     res.status(404).json({ error: "Not found" });
     return;
   }
-  res.json(updated);
+  res.json(serializeProject(updated));
 });
 router.delete("/admin/projects/:id", async (req, res) => {
   const id = Number(req.params["id"]);
@@ -177,16 +235,29 @@ router.delete("/admin/projects/:id", async (req, res) => {
 });
 
 router.get("/admin/team", async (_req, res) => {
-  res.json(await db.select().from(teamTable));
+  const rows = await db.select().from(teamTable);
+  res.json(rows.map(serializeTeam));
 });
 router.post("/admin/team", async (req, res) => {
-  const parsed = insertTeamSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Invalid payload", issues: parsed.error.issues });
+  const input = teamInputFromBody(req.body);
+  if (!input.name || !input.position) {
+    res.status(400).json({ error: "name and position are required" });
     return;
   }
-  const [created] = await db.insert(teamTable).values(parsed.data).returning();
-  res.status(201).json(created);
+  const [created] = await db
+    .insert(teamTable)
+    .values({
+      name: input.name,
+      position: input.position,
+      email: input.email,
+      phone: input.phone,
+      bio: input.bio,
+      imageUrl: input.imageUrl,
+      socialLinks: input.socialLinks,
+      skills: input.skills,
+    })
+    .returning();
+  res.status(201).json(created ? serializeTeam(created) : null);
 });
 router.put("/admin/team/:id", async (req, res) => {
   const id = Number(req.params["id"]);
@@ -194,21 +265,21 @@ router.put("/admin/team/:id", async (req, res) => {
     res.status(400).json({ error: "Invalid id" });
     return;
   }
-  const parsed = insertTeamSchema.partial().safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Invalid payload", issues: parsed.error.issues });
+  const input = pickDefined(teamInputFromBody(req.body));
+  if (Object.keys(input).length === 0) {
+    res.status(400).json({ error: "Nothing to update" });
     return;
   }
   const [updated] = await db
     .update(teamTable)
-    .set({ ...parsed.data, updatedAt: new Date() })
+    .set({ ...input, updatedAt: new Date() })
     .where(eq(teamTable.id, id))
     .returning();
   if (!updated) {
     res.status(404).json({ error: "Not found" });
     return;
   }
-  res.json(updated);
+  res.json(serializeTeam(updated));
 });
 router.delete("/admin/team/:id", async (req, res) => {
   const id = Number(req.params["id"]);
@@ -225,7 +296,7 @@ router.get("/admin/messages", async (_req, res) => {
     .select()
     .from(messagesTable)
     .orderBy(desc(messagesTable.createdAt));
-  res.json(rows);
+  res.json(rows.map(serializeMessage));
 });
 
 router.put("/admin/messages/:id", async (req, res) => {
@@ -253,7 +324,36 @@ router.put("/admin/messages/:id", async (req, res) => {
     res.status(404).json({ error: "Not found" });
     return;
   }
-  res.json(updated);
+  res.json(serializeMessage(updated));
+});
+
+router.post("/admin/messages/:id/reply", async (req, res) => {
+  const id = Number(req.params["id"]);
+  if (!Number.isFinite(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  const { adminReply, reply } = req.body ?? {};
+  const replyText = (adminReply ?? reply) as string | undefined;
+  if (typeof replyText !== "string" || replyText.trim() === "") {
+    res.status(400).json({ error: "adminReply is required" });
+    return;
+  }
+  const [updated] = await db
+    .update(messagesTable)
+    .set({
+      adminReply: replyText,
+      repliedAt: new Date(),
+      status: "replied",
+      updatedAt: new Date(),
+    })
+    .where(eq(messagesTable.id, id))
+    .returning();
+  if (!updated) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  res.json({ success: true, email: updated.email, message: serializeMessage(updated) });
 });
 
 router.delete("/admin/messages/:id", async (req, res) => {
@@ -268,10 +368,18 @@ router.delete("/admin/messages/:id", async (req, res) => {
 
 router.get("/admin/attendance", async (_req, res) => {
   const rows = await db
-    .select()
+    .select({
+      attendance: attendanceTable,
+      user: usersTable,
+      event: eventsTable,
+    })
     .from(attendanceTable)
+    .leftJoin(usersTable, eq(usersTable.id, attendanceTable.userId))
+    .leftJoin(eventsTable, eq(eventsTable.id, attendanceTable.eventId))
     .orderBy(desc(attendanceTable.checkInTime));
-  res.json(rows);
+  res.json(
+    rows.map((r) => serializeAttendance(r.attendance, r.user, r.event)),
+  );
 });
 
 router.get("/admin/settings", async (_req, res) => {
@@ -279,7 +387,7 @@ router.get("/admin/settings", async (_req, res) => {
   if (!settings) {
     [settings] = await db.insert(settingsTable).values({}).returning();
   }
-  res.json(settings ?? {});
+  res.json(settings ? serializeSettings(settings) : {});
 });
 
 router.put("/admin/settings", async (req, res) => {
@@ -294,7 +402,7 @@ router.put("/admin/settings", async (req, res) => {
       .insert(settingsTable)
       .values(parsed.data as never)
       .returning();
-    res.json(existing);
+    res.json(existing ? serializeSettings(existing) : {});
     return;
   }
   const [updated] = await db
@@ -302,7 +410,9 @@ router.put("/admin/settings", async (req, res) => {
     .set({ ...parsed.data, updatedAt: new Date() } as never)
     .where(eq(settingsTable.id, existing.id))
     .returning();
-  res.json(updated);
+  res.json(updated ? serializeSettings(updated) : {});
 });
+
+void sql;
 
 export default router;

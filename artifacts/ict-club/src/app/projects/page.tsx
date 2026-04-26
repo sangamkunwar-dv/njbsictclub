@@ -10,7 +10,7 @@ interface Project {
   name: string
   description: string
   status: string
-  technologies: any // 👈 FIXED (was string)
+  technologies: any 
   github_url: string
   demo_url: string
 }
