@@ -68,7 +68,7 @@ export default function AdminAttendance() {
 
     const matchesSearch = name.includes(search) || email.includes(search)
 
-    const matchesEvent = !filterEvent || r.eventId?._id === filterEvent
+    const matchesEvent = !filterEvent || String(r.eventId?._id) === String(filterEvent)
 
     return matchesSearch && matchesEvent
   })
