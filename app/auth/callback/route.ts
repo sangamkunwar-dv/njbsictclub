@@ -2,16 +2,19 @@ import { NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url)
-  const code = searchParams.get('code')
+export const dynamic = 'force-dynamic'
 
-  // ❌ No code → redirect login
+export async function GET(request: Request) {
+  const url = new URL(request.url)
+  const code = url.searchParams.get('code')
+  const origin = url.origin
+
+  // ❌ No code → login
   if (!code) {
     return NextResponse.redirect(`${origin}/auth/login`)
   }
 
-  const cookieStore = await cookies()
+  const cookieStore = cookies()
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -19,23 +22,24 @@ export async function GET(request: Request) {
     {
       cookies: {
         getAll: () => cookieStore.getAll(),
+
         setAll: (cookiesToSet) => {
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value, options }) => {
             cookieStore.set(name, value, options)
-          )
+          })
         },
       },
     }
   )
 
-  // ✅ THIS IS REQUIRED (your missing part)
+  // 🔥 exchange OAuth code for session
   const { error } = await supabase.auth.exchangeCodeForSession(code)
 
   if (error) {
     console.error('OAuth error:', error.message)
-    return NextResponse.redirect(`${origin}/auth/login?error=oauth`)
+    return NextResponse.redirect(`${origin}/auth/login?error=oauth_failed`)
   }
 
-  // ✅ success → dashboard
+  // ✅ success login
   return NextResponse.redirect(`${origin}/dashboard`)
 }
