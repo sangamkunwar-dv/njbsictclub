@@ -1,19 +1,41 @@
 import { NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 
 export async function GET(request: Request) {
-  const requestUrl = new URL(request.url)
-  const code = requestUrl.searchParams.get('code')
+  const { searchParams, origin } = new URL(request.url)
+  const code = searchParams.get('code')
 
-  // No code → redirect to login
+  // ❌ No code → redirect login
   if (!code) {
-    return NextResponse.redirect(new URL('/auth/login', request.url))
+    return NextResponse.redirect(`${origin}/auth/login`)
   }
 
-  // This is a generic callback handler
-  // Specific OAuth providers handle their own callbacks:
-  // - /api/auth/callback/google → Google OAuth
-  // - /api/auth/callback/github → GitHub OAuth
-  
-  // Redirect to dashboard if authenticated
-  return NextResponse.redirect(new URL('/dashboard', request.url))
+  const cookieStore = await cookies()
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll: () => cookieStore.getAll(),
+        setAll: (cookiesToSet) => {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options)
+          )
+        },
+      },
+    }
+  )
+
+  // ✅ THIS IS REQUIRED (your missing part)
+  const { error } = await supabase.auth.exchangeCodeForSession(code)
+
+  if (error) {
+    console.error('OAuth error:', error.message)
+    return NextResponse.redirect(`${origin}/auth/login?error=oauth`)
+  }
+
+  // ✅ success → dashboard
+  return NextResponse.redirect(`${origin}/dashboard`)
 }
