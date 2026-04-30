@@ -9,7 +9,6 @@ export async function GET(request: Request) {
   const code = url.searchParams.get('code')
   const origin = url.origin
 
-  // ❌ No code → login
   if (!code) {
     return NextResponse.redirect(`${origin}/auth/login`)
   }
@@ -22,7 +21,6 @@ export async function GET(request: Request) {
     {
       cookies: {
         getAll: () => cookieStore.getAll(),
-
         setAll: (cookiesToSet) => {
           cookiesToSet.forEach(({ name, value, options }) => {
             cookieStore.set(name, value, options)
@@ -32,7 +30,6 @@ export async function GET(request: Request) {
     }
   )
 
-  // 🔥 exchange OAuth code for session
   const { error } = await supabase.auth.exchangeCodeForSession(code)
 
   if (error) {
@@ -40,6 +37,5 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/auth/login?error=oauth_failed`)
   }
 
-  // ✅ success login
   return NextResponse.redirect(`${origin}/dashboard`)
 }

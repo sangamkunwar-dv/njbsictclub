@@ -3,9 +3,9 @@
 import { useState, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase/client'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { createBrowserClient } from '@supabase/ssr'
 
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -24,6 +24,7 @@ function SignupForm() {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+    setError('')
 
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -45,6 +46,8 @@ function SignupForm() {
     if (data.user) {
       router.push('/dashboard')
     }
+
+    setLoading(false)
   }
 
   const handleOAuth = async (provider: 'google' | 'github') => {
@@ -62,16 +65,15 @@ function SignupForm() {
 
       {error && <p className="text-red-500">{error}</p>}
 
-      {/* OAuth FIXED */}
-      <button onClick={() => handleOAuth('google')}>
+      <button onClick={() => handleOAuth('google')} className="w-full mb-2">
         Continue with Google
       </button>
 
-      <button onClick={() => handleOAuth('github')}>
+      <button onClick={() => handleOAuth('github')} className="w-full mb-4">
         Continue with GitHub
       </button>
 
-      <form onSubmit={handleSignup} className="space-y-3 mt-4">
+      <form onSubmit={handleSignup} className="space-y-3">
         <Input
           placeholder="Full Name"
           value={fullName}
