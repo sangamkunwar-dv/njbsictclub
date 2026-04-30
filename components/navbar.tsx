@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image'; // ✅ added
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Menu, X, LogOut, User, Moon, Sun, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,17 +30,27 @@ export function Navbar() {
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (user) {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    // ✅ FIX: Only fetch if user exists AND we are mounted
+    // This stops the 401 error in the console
+    if (mounted && user) {
       fetchProfile();
+    } else if (!user) {
+      setProfile(null);
     }
-  }, [user]);
+  }, [user, mounted]);
 
   const fetchProfile = async () => {
-    if (!user) return;
     try {
       const response = await fetch('/api/auth/me');
+      if (response.status === 401) return; // ✅ Silently exit if unauthorized
+      
       const data = await response.json();
       if (data.user) {
         setProfile({
@@ -51,30 +61,33 @@ export function Navbar() {
         });
       }
     } catch (error) {
-      console.error('[v0] Error fetching profile:', error);
+      // Only log actual network errors, not 401s
+      console.error('Profile fetch failed:', error);
     }
   };
 
   const handleSignOut = async () => {
     await signOut();
+    setShowUserMenu(false);
     router.push('/');
   };
+
+  if (!mounted) return null;
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 mx-4 my-4 rounded-2xl bg-card/40 backdrop-blur-xl border border-border/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           
-          {/* ✅ LOGO FIXED */}
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <Image
-              src="/ictclubNJBS.jpg"   // 👉 put this file inside /public
+              src="/ictclubNJBS.jpg"
               alt="ICT Club Logo"
               width={40}
               height={40}
-              className="rounded-full object-cover"
+              className="rounded-full object-cover border border-primary/20"
             />
-            <span className="font-bold text-lg hidden sm:inline">
+            <span className="font-bold text-lg hidden sm:inline tracking-tight">
               ICT Club
             </span>
           </Link>
@@ -85,124 +98,125 @@ export function Navbar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="text-sm text-foreground/80 hover:text-primary transition-colors"
+                className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors"
               >
                 {item.label}
               </Link>
             ))}
           </div>
 
-          {/* Theme Toggle & Auth Buttons */}
-          <div className="hidden sm:flex items-center gap-3 relative">
+          {/* Actions */}
+          <div className="flex items-center gap-3">
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-lg text-foreground/80 hover:bg-primary/10 transition-colors"
-              title="Toggle theme"
+              className="p-2 rounded-lg text-foreground/70 hover:bg-primary/10 hover:text-primary transition-all"
             >
               {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </button>
 
             {loading ? (
-              <div className="h-8 w-8 rounded-full bg-muted animate-pulse"></div>
+              <div className="h-9 w-9 rounded-full bg-muted animate-pulse border border-border/50"></div>
             ) : user ? (
               <div className="relative">
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-foreground/80 hover:bg-primary/10 transition-colors"
+                  className="flex items-center gap-2 p-1 pr-3 rounded-full bg-secondary/50 hover:bg-secondary border border-border/50 transition-all"
                 >
                   {profile?.avatar_url ? (
-                    <img
-                      src={profile.avatar_url}
-                      alt="Avatar"
-                      className="w-5 h-5 rounded-full object-cover"
-                    />
+                    <img src={profile.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover" />
                   ) : (
-                    <div className="w-5 h-5 rounded-full bg-primary/30 flex items-center justify-center">
-                      <User size={12} />
+                    <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                      <User size={14} />
                     </div>
                   )}
-                  <span className="hidden sm:inline text-xs font-medium">
-                    {profile?.member_id || user.email?.split('@')[0]}
+                  <span className="text-xs font-bold uppercase tracking-wider">
+                    {profile?.member_id || 'Member'}
                   </span>
                 </button>
 
                 {showUserMenu && (
-                  <div className="absolute right-0 top-full mt-2 w-56 bg-card/40 backdrop-blur-xl border border-border/50 rounded-lg py-2 z-50">
-                    <div className="px-4 py-3 border-b border-border/50">
-                      <p className="font-semibold text-sm">
-                        {profile?.full_name || 'User'}
-                      </p>
-                      <p className="text-xs text-foreground/60">
-                        {profile?.member_id || user.email}
-                      </p>
-                      <p className="text-xs text-primary mt-1 capitalize">
-                        {profile?.role || 'member'}
-                      </p>
+                  <>
+                    {/* Backdrop to close menu when clicking outside */}
+                    <div className="fixed inset-0 z-[-1]" onClick={() => setShowUserMenu(false)} />
+                    
+                    <div className="absolute right-0 top-full mt-3 w-64 bg-card border border-border shadow-2xl rounded-2xl py-3 overflow-hidden animate-in fade-in zoom-in duration-200">
+                      <div className="px-4 py-3 border-b border-border/50 bg-muted/30">
+                        <p className="font-bold text-sm truncate">{profile?.full_name || 'ICT Member'}</p>
+                        <p className="text-[10px] text-muted-foreground truncate uppercase tracking-widest mt-0.5">
+                          {profile?.role || 'User'} • {user.email}
+                        </p>
+                      </div>
+
+                      <div className="p-1">
+                        <Link
+                          href="/profile"
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-lg hover:bg-primary/10 hover:text-primary transition-colors"
+                          onClick={() => setShowUserMenu(false)}
+                        >
+                          <User size={16} /> My Profile
+                        </Link>
+
+                        {(profile?.role === 'admin' || user?.email === 'sangamkunwar48@gmail.com') && (
+                          <Link
+                            href="/admin"
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-lg text-primary hover:bg-primary/10 transition-colors"
+                            onClick={() => setShowUserMenu(false)}
+                          >
+                            <Settings size={16} /> Admin Dashboard
+                          </Link>
+                        )}
+
+                        <button
+                          onClick={handleSignOut}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm rounded-lg text-destructive hover:bg-destructive/10 transition-colors border-t border-border/50 mt-1"
+                        >
+                          <LogOut size={16} /> Sign Out
+                        </button>
+                      </div>
                     </div>
-
-                    <Link
-                      href="/profile"
-                      className="block px-4 py-2 text-sm text-foreground/80 hover:text-primary hover:bg-primary/10 transition-colors"
-                      onClick={() => setShowUserMenu(false)}
-                    >
-                      Edit Profile
-                    </Link>
-
-                    {(profile?.role === 'admin' ||
-                      user?.email === 'sangamkunwar48@gmail.com') && (
-                      <Link
-                        href="/admin"
-                        className="block px-4 py-2 text-sm text-primary hover:bg-primary/10 transition-colors flex items-center gap-2"
-                        onClick={() => setShowUserMenu(false)}
-                      >
-                        <Settings size={14} />
-                        Admin Dashboard
-                      </Link>
-                    )}
-
-                    <button
-                      onClick={handleSignOut}
-                      className="w-full text-left px-4 py-2 text-sm text-foreground/80 hover:text-destructive hover:bg-destructive/10 transition-colors flex items-center gap-2 border-t border-border/50"
-                    >
-                      <LogOut size={14} />
-                      Sign Out
-                    </button>
-                  </div>
+                  </>
                 )}
               </div>
             ) : (
-              <>
-                <Button variant="ghost" size="sm" asChild>
+              <div className="hidden sm:flex items-center gap-2">
+                <Button variant="ghost" size="sm" asChild className="rounded-full">
                   <Link href="/auth/login">Login</Link>
                 </Button>
-                <Button size="sm" className="bg-primary text-primary-foreground" asChild>
-                  <Link href="/auth/signup">Join</Link>
+                <Button size="sm" asChild className="rounded-full px-6">
+                  <Link href="/auth/signup">Join Club</Link>
                 </Button>
-              </>
+              </div>
             )}
-          </div>
 
-          {/* Mobile Menu Button */}
-          <button className="md:hidden" onClick={() => setIsOpen(!isOpen)}>
-            {isOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+            <button className="md:hidden p-2" onClick={() => setIsOpen(!isOpen)}>
+              {isOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Menu */}
         {isOpen && (
-          <div className="md:hidden pb-4 border-t border-border/50">
-            <div className="flex flex-col gap-2 pt-4">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="px-4 py-2 text-sm text-foreground/80 hover:text-primary"
-                  onClick={() => setIsOpen(false)}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </div>
+          <div className="md:hidden py-4 border-t border-border/50 space-y-1">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="block px-4 py-3 text-base font-medium hover:bg-primary/10 rounded-xl transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                {item.label}
+              </Link>
+            ))}
+            {!user && (
+              <div className="pt-4 grid grid-cols-2 gap-2 px-4">
+                <Button variant="outline" asChild>
+                  <Link href="/auth/login">Login</Link>
+                </Button>
+                <Button asChild>
+                  <Link href="/auth/signup">Join</Link>
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>

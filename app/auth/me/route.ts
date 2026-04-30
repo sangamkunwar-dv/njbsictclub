@@ -14,19 +14,39 @@ export async function GET() {
           return cookieStore.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          )
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {
+            // The setAll method is called even in GET routes. 
+            // We catch this to prevent errors in Middleware or Server Components.
+          }
         },
       },
     }
   )
 
+  // Use getUser() for security (it validates the JWT with Supabase)
   const { data: { user }, error } = await supabase.auth.getUser()
 
   if (error || !user) {
-    return NextResponse.json({ user: null }, { status: 401 })
+    // ✅ FIX: Return 200 instead of 401 to keep the console clean.
+    // Your frontend Navbar logic already checks for !user, so this works perfectly.
+    return NextResponse.json({ user: null }, { status: 200 })
   }
 
-  return NextResponse.json({ user })
+  // Optional: Fetch extra profile data from your 'profiles' table if needed
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name, avatar_url, member_id, role')
+    .eq('id', user.id)
+    .single()
+
+  return NextResponse.json({ 
+    user: {
+      ...user,
+      ...profile // Merges base auth data with your custom profile fields
+    } 
+  })
 }
