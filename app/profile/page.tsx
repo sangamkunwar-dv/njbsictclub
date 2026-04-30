@@ -10,7 +10,7 @@ import { Footer } from '@/components/footer'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
-import { Download, Copy, LogOut } from 'lucide-react'
+import { Download, Copy, LogOut, Loader2 } from 'lucide-react'
 
 interface UserProfile {
   _id: string
@@ -28,12 +28,12 @@ export default function ProfilePage() {
   const { user, loading } = useUser()
 
   const [profile, setProfile] = useState<UserProfile | null>(null)
-  const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState({ text: '', type: '' })
   const [loadingProfile, setLoadingProfile] = useState(true)
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
+    // If auth loading is done and no user exists, redirect
     if (!loading && !user) {
       router.push('/auth/login')
       return
@@ -45,8 +45,6 @@ export default function ProfilePage() {
   }, [user, loading, router])
 
   const fetchProfile = async () => {
-    if (!user) return
-
     try {
       const res = await fetch('/api/auth/me')
       if (res.ok) {
@@ -74,16 +72,14 @@ export default function ProfilePage() {
 
   const handleDownloadQR = () => {
     if (!profile?.qrCode) return
-
     const link = document.createElement('a')
     link.href = profile.qrCode
-    link.download = `${profile.full_name}-qrcode.png`
+    link.download = `${profile?.full_name || 'user'}-qrcode.png`
     link.click()
   }
 
   const handleCopyQRData = () => {
     if (!profile?.userId) return
-
     navigator.clipboard.writeText(profile.userId)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
@@ -98,26 +94,23 @@ export default function ProfilePage() {
     return labels[profile?.oauthProvider || 'email'] || 'Email'
   }
 
+  // Improved Loading State
   if (loading || loadingProfile) {
     return (
       <>
         <Navbar />
-        <div className="min-h-screen flex items-center justify-center">
-          Loading profile...
+        <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+          <Loader2 className="animate-spin text-blue-600" size={40} />
+          <p className="text-slate-600 font-medium">Loading your profile...</p>
         </div>
+        <Footer />
       </>
     )
   }
 
+  // Security Check: If profile failed to load or user is gone
   if (!user || !profile) {
-    return (
-      <>
-        <Navbar />
-        <div className="min-h-screen flex items-center justify-center">
-          <p>Redirect to login...</p>
-        </div>
-      </>
-    )
+    return null // useEffect will handle the redirect
   }
 
   return (
@@ -168,7 +161,7 @@ export default function ProfilePage() {
                   </div>
 
                   <p className="text-xs text-slate-500 text-center break-all">
-                    ID: {profile.userId}
+                    ID: {profile.userId || 'N/A'}
                   </p>
 
                   <div className="space-y-2">
@@ -189,14 +182,10 @@ export default function ProfilePage() {
                       {copied ? 'Copied!' : 'Copy ID'}
                     </Button>
                   </div>
-
-                  <p className="text-xs text-slate-600 text-center">
-                    Use this QR code for event attendance and project participation
-                  </p>
                 </div>
               ) : (
                 <div className="bg-slate-100 rounded-lg p-8 text-center">
-                  <p className="text-slate-600 text-sm">QR code generating...</p>
+                  <p className="text-slate-600 text-sm">QR code not available</p>
                 </div>
               )}
             </Card>
@@ -207,7 +196,7 @@ export default function ProfilePage() {
 
               <div className="space-y-5">
 
-                {/* Avatar */}
+                {/* Avatar Section - FIXED LINE BELOW */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
                     Avatar
@@ -219,9 +208,10 @@ export default function ProfilePage() {
                       className="w-16 h-16 rounded-lg object-cover border border-slate-200"
                     />
                   ) : (
-                    <div className="w-16 h-16 rounded-lg bg-slate-200 flex items-center justify-center">
-                      <span className="text-2xl text-slate-400">
-                        {profile.full_name.charAt(0).toUpperCase()}
+                    <div className="w-16 h-16 rounded-lg bg-blue-100 flex items-center justify-center border border-blue-200">
+                      <span className="text-2xl font-bold text-blue-600">
+                        {/* SAFE ACCESS WITH OPTIONAL CHAINING */}
+                        {profile?.full_name?.charAt(0).toUpperCase() || "U"}
                       </span>
                     </div>
                   )}
@@ -234,8 +224,8 @@ export default function ProfilePage() {
                   </label>
                   <Input
                     value={profile.full_name || ''}
-                    disabled
-                    className="bg-slate-50 text-slate-600"
+                    readOnly
+                    className="bg-slate-50 text-slate-600 cursor-not-allowed"
                   />
                 </div>
 
@@ -245,9 +235,9 @@ export default function ProfilePage() {
                     Email
                   </label>
                   <Input
-                    value={profile.email}
-                    disabled
-                    className="bg-slate-50 text-slate-600"
+                    value={profile.email || ''}
+                    readOnly
+                    className="bg-slate-50 text-slate-600 cursor-not-allowed"
                   />
                 </div>
 
@@ -267,14 +257,14 @@ export default function ProfilePage() {
                     Role
                   </label>
                   <div className="px-4 py-2 bg-slate-50 rounded-lg border border-slate-200 text-slate-700 font-medium capitalize">
-                    {profile.role}
+                    {profile.role || 'Member'}
                   </div>
                 </div>
 
-                {/* Account Created */}
+                {/* Account Details */}
                 <div className="pt-4 border-t border-slate-200">
-                  <p className="text-xs text-slate-500">
-                    Account ID: {profile._id}
+                  <p className="text-xs text-slate-400">
+                    Database ID: {profile._id}
                   </p>
                 </div>
 
@@ -282,30 +272,6 @@ export default function ProfilePage() {
             </Card>
 
           </div>
-
-          {/* QR Code Info Section */}
-          <Card className="mt-6 p-6 bg-blue-50 border-2 border-blue-200">
-            <h3 className="text-lg font-bold text-blue-900 mb-3">How to Use Your QR Code</h3>
-            <ul className="space-y-2 text-sm text-blue-800">
-              <li className="flex gap-3">
-                <span className="font-bold">1.</span>
-                <span>Use your QR code for quick attendance registration at club events</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="font-bold">2.</span>
-                <span>Share it with organizers for project collaboration and team assignments</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="font-bold">3.</span>
-                <span>Download and keep a copy for offline reference</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="font-bold">4.</span>
-                <span>Your unique ID can be used to verify your attendance across all events</span>
-              </li>
-            </ul>
-          </Card>
-
         </div>
       </main>
 
