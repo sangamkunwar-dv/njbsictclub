@@ -1,14 +1,35 @@
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
-import { connectDB } from '@/lib/mongodb'
-import { Event } from '@/models/Event'
 
 export async function GET() {
   try {
-    await connectDB()
+    const cookieStore = await cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() { return cookieStore.getAll() },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              )
+            } catch { /* Safe to ignore in GET */ }
+          },
+        },
+      }
+    )
 
-    const events = await Event.find().sort({ event_date: 1 })
+    const { data, error } = await supabase
+      .from('events')
+      .select('*')
+      .order('event_date', { ascending: true })
 
-    return NextResponse.json(events)
+    if (error) throw error
+
+    return NextResponse.json(data || [])
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
@@ -16,13 +37,33 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    await connectDB()
+    const cookieStore = await cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() { return cookieStore.getAll() },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              )
+            } catch { /* Safe to ignore in POST */ }
+          },
+        },
+      }
+    )
 
     const body = await req.json()
+    const { data, error } = await supabase
+      .from('events')
+      .insert([body])
+      .select()
 
-    const event = await Event.create(body)
+    if (error) throw error
 
-    return NextResponse.json(event)
+    return NextResponse.json(data[0])
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
