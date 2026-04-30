@@ -1,20 +1,22 @@
-import { NextResponse } from 'next/server'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
-import jwt from 'jsonwebtoken'
+import { NextResponse } from 'next/server'
 
 export async function GET() {
   try {
     const cookieStore = await cookies()
-    const token = cookieStore.get('token')?.value
+    // This helper automatically looks for the Supabase auth cookies
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
 
-    if (!token) {
-      return NextResponse.json({ user: null })
+    // Use getUser() for security (it validates the token with Supabase)
+    const { data: { user }, error } = await supabase.auth.getUser()
+
+    if (error || !user) {
+      return NextResponse.json({ user: null }, { status: 401 })
     }
 
-    const user = jwt.verify(token, process.env.JWT_SECRET!)
-
     return NextResponse.json({ user })
-  } catch {
-    return NextResponse.json({ user: null })
+  } catch (err) {
+    return NextResponse.json({ user: null }, { status: 500 })
   }
 }
