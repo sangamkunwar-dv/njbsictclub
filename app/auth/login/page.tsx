@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase/client'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, ShieldCheck } from 'lucide-react'
 
 function LoginForm() {
   const router = useRouter()
@@ -25,54 +25,67 @@ function LoginForm() {
   }
 
   return (
-    <div className="w-full max-w-sm px-6 py-10 bg-white dark:bg-zinc-950 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xl">
-      <div className="text-center mb-8">
-        <h2 className="text-4xl font-black italic tracking-tighter text-fuchsia-600 dark:text-fuchsia-500 uppercase">
-          Club<span className="text-black dark:text-white">Nex</span>
-        </h2>
-        <p className="text-sm font-bold text-zinc-500 mt-2">Back to the beats.</p>
+    <div className="w-full max-w-md p-8 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm">
+      <div className="flex flex-col items-center mb-10">
+        <div className="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center mb-4 shadow-lg shadow-purple-500/20">
+          <ShieldCheck className="text-white" size={28} />
+        </div>
+        <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+          ICT Club Portal
+        </h1>
+        <p className="text-sm text-zinc-500 mt-1">Sign in to manage your digital projects</p>
       </div>
 
       <form onSubmit={handleLogin} className="space-y-4">
-        <div>
-          <label className="text-xs font-black uppercase tracking-widest mb-1 block">Email</label>
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300 ml-1">Email Address</label>
           <Input 
-            className="dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 focus:border-fuchsia-500" 
+            type="email"
+            placeholder="name@njbsict.com"
+            className="rounded-lg border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 focus:ring-purple-500" 
             value={email} onChange={(e) => setEmail(e.target.value)} 
           />
         </div>
 
-        <div className="relative">
-          <label className="text-xs font-black uppercase tracking-widest mb-1 block">Password</label>
-          <Input 
-            type={showPassword ? "text" : "password"}
-            className="dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700"
-            value={password} onChange={(e) => setPassword(e.target.value)}
-          />
-          <button 
-            type="button" 
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-8 text-zinc-500 hover:text-fuchsia-500"
-          >
-            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-          </button>
+        <div className="space-y-1.5 relative">
+          <div className="flex justify-between items-center px-1">
+            <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Password</label>
+            <Link href="#" className="text-xs text-purple-600 hover:underline">Forgot password?</Link>
+          </div>
+          <div className="relative">
+            <Input 
+              type={showPassword ? "text" : "password"}
+              placeholder="••••••••"
+              className="rounded-lg dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 pr-10"
+              value={password} onChange={(e) => setPassword(e.target.value)}
+            />
+            <button 
+              type="button" 
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
         </div>
 
-        <Button className="w-full bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-black py-6 rounded-full uppercase tracking-widest shadow-lg shadow-fuchsia-500/20">
-          Enter the Club
+        <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-6 rounded-lg transition-all">
+          Sign In to Dashboard
         </Button>
       </form>
 
-      <p className="mt-8 text-center text-sm font-medium">
-        Not on the list? <Link href="/auth/signup" className="text-fuchsia-600 underline">Join Now</Link>
-      </p>
+      <div className="mt-8 pt-6 border-t border-zinc-100 dark:border-zinc-800 text-center">
+        <p className="text-sm text-zinc-500">
+          Not a member yet? <Link href="/auth/signup" className="text-purple-600 font-bold hover:underline">Apply for Membership</Link>
+        </p>
+      </div>
     </div>
   )
 }
 
 export default function LoginPage() {
   return (
-    <main className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-black p-4">
+    <main className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-900 p-6">
       <Suspense><LoginForm /></Suspense>
     </main>
   )
