@@ -35,18 +35,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      // ✅ suppressHydrationWarning is needed here because of ThemeProvider (dark/light mode)
       suppressHydrationWarning 
       className={`${geist.variable} ${geistMono.variable}`}
     >
       <head>
-        {/* Favicon fallback */}
         <link rel="icon" href="/ictclubNJBS.jpg" />
-        
-        {/* 
-          ✅ PRO TIP: For AdSense, placing it in head with standard tags is best.
-          Change ca-pub-XXXXXXXXXXXXXXXX to your actual ID.
-        */}
         <script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5849186110366340"
@@ -56,18 +49,16 @@ export default function RootLayout({
 
       <body 
         className="font-sans antialiased bg-background text-foreground"
-        // ✅ CRITICAL: Using true here helps with browser extensions like Grammarly or Dark Reader
         suppressHydrationWarning={true}
       >
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
+          defaultTheme="dark" // Matches your ICT Club theme preference
+          enableSystem={true}
+          disableTransitionOnChange={true}
         >
           {children}
           <CookieBanner />
-          {/* Only load analytics in production to save quota */}
           {process.env.NODE_ENV === 'production' && <Analytics />}
         </ThemeProvider>
       </body>
