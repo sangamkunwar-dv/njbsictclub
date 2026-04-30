@@ -1,9 +1,9 @@
 import bcrypt from 'bcryptjs'
-import jwt from 'jsonwebtoken'
+import jwt, { SignOptions } from 'jsonwebtoken'
 import { getSupabaseServer } from './supabase-server'
 import { generateUserID } from './generate-user-id'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-change-in-production'
+const JWT_SECRET = process.env.JWT_SECRET as string
 
 /* =========================
    PASSWORD UTILITIES
@@ -31,15 +31,17 @@ export function createToken(
   role: string,
   expiresIn: string = '7d'
 ): string {
-  return jwt.sign(
-    {
-      userId,
-      email: userEmail,
-      role,
-    },
-    JWT_SECRET,
-    { expiresIn }
-  )
+  const payload = {
+    userId,
+    email: userEmail,
+    role,
+  }
+
+  const options: SignOptions = {
+    expiresIn: expiresIn as SignOptions['expiresIn'], // ✅ FIX
+  }
+
+  return jwt.sign(payload, JWT_SECRET, options)
 }
 
 export function verifyToken(token: string): {
