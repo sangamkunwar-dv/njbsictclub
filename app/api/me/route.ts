@@ -6,7 +6,9 @@ import User from '@/models/User'
 
 export async function GET() {
   try {
-    const token = cookies().get('token')?.value
+    // ✅ FIX: cookies() is async in Next.js 16
+    const cookieStore = await cookies()
+    const token = cookieStore.get('token')?.value
 
     if (!token) {
       return NextResponse.json(
@@ -15,16 +17,17 @@ export async function GET() {
       )
     }
 
+    // ✅ Verify token safely
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET!
-    ) as any
+      process.env.JWT_SECRET as string
+    ) as { userId: string }
 
     console.log("DECODED:", decoded)
 
     await connectDB()
 
-    // ✅ FIX: use userId (NOT id)
+    // ✅ Correct lookup
     const user = await User.findOne({
       userId: decoded.userId
     })
@@ -38,7 +41,7 @@ export async function GET() {
 
     return NextResponse.json({
       user: {
-        id: user._id,
+        id: user._id.toString(), // ✅ safer for frontend
         email: user.email,
         role: user.role,
       }
