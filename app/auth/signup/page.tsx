@@ -1,100 +1,85 @@
 'use client'
 
-import { useState, Suspense } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
+import { useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { supabase } from '@/lib/supabase/client'
+import { Check, X, Eye, EyeOff } from 'lucide-react'
+import Link from 'next/link'
 
 function SignupForm() {
-  const router = useRouter()
-  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [fullName, setFullName] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: fullName } },
-    })
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-      return
-    }
-    router.push('/dashboard')
-  }
+  const [showPassword, setShowPassword] = useState(false)
+  
+  // Password Logic
+  const requirements = [
+    { label: 'At least 8 characters', met: password.length >= 8 },
+    { label: 'Contains a number', met: /[0-9]/.test(password) },
+    { label: 'Special character (@$!%*)', met: /[^A-Za-z0-9]/.test(password) },
+  ]
 
   return (
-    <div className="w-full max-w-sm px-4">
-      <div className="flex justify-center mb-10">
-        <div className="text-3xl font-black tracking-tighter">
-          Nexora<span className="text-[#1DB954]">.</span>
-        </div>
+    <div className="w-full max-w-md px-6 py-10 bg-white dark:bg-zinc-950 rounded-2xl border border-zinc-200 dark:border-zinc-800">
+      <div className="mb-8">
+        <h1 className="text-3xl font-black uppercase italic tracking-tighter">
+          Join the <span className="text-fuchsia-600">Circle</span>
+        </h1>
+        <p className="text-zinc-500 font-bold">Create your VIP access pass.</p>
       </div>
 
-      <h1 className="text-4xl font-bold text-center mb-10 tracking-tighter">
-        Sign up to start listening
-      </h1>
-
-      <form onSubmit={handleSignup} className="space-y-6">
+      <form className="space-y-5">
         <div>
-          <label className="text-sm font-bold mb-2 block">What's your email?</label>
-          <Input
-            className="rounded-md border-gray-400 dark:bg-zinc-900 dark:border-zinc-700"
-            placeholder="Enter your email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+          <label className="text-xs font-black uppercase tracking-widest mb-1 block">Full Name</label>
+          <Input className="dark:bg-zinc-900" placeholder="John Doe" />
         </div>
 
         <div>
-          <label className="text-sm font-bold mb-2 block">Create a password</label>
-          <Input
-            type="password"
-            className="rounded-md border-gray-400 dark:bg-zinc-900 dark:border-zinc-700"
-            placeholder="Create a password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+          <label className="text-xs font-black uppercase tracking-widest mb-1 block">Email</label>
+          <Input className="dark:bg-zinc-900" type="email" />
         </div>
 
-        <div>
-          <label className="text-sm font-bold mb-2 block">What should we call you?</label>
-          <Input
-            className="rounded-md border-gray-400 dark:bg-zinc-900 dark:border-zinc-700"
-            placeholder="Enter a profile name"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-          />
-          <p className="text-xs text-gray-500 mt-2">This appears on your profile.</p>
+        <div className="relative">
+          <label className="text-xs font-black uppercase tracking-widest mb-1 block">Create Password</label>
+          <div className="relative">
+            <Input 
+              type={showPassword ? "text" : "password"}
+              className="dark:bg-zinc-900 pr-10"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <button 
+              type="button" 
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500"
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+
+          {/* Password Strength Guide */}
+          <div className="mt-3 p-3 bg-zinc-50 dark:bg-zinc-900/50 rounded-lg space-y-2">
+            <p className="text-[10px] font-black uppercase text-zinc-400 mb-1">Security Standards</p>
+            {requirements.map((req, i) => (
+              <div key={i} className="flex items-center gap-2 text-xs">
+                {req.met ? (
+                  <Check size={14} className="text-green-500" />
+                ) : (
+                  <X size={14} className="text-zinc-400 dark:text-zinc-600" />
+                )}
+                <span className={req.met ? "text-green-500 font-medium" : "text-zinc-500"}>
+                  {req.label}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <Button 
-          className="w-full bg-[#1DB954] hover:bg-[#1ed760] text-black font-bold py-7 rounded-full text-lg" 
-          disabled={loading}
-        >
-          {loading ? 'Creating...' : 'Sign Up'}
+        <Button className="w-full bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-black py-7 rounded-full uppercase tracking-tighter text-lg">
+          Get My Invite
         </Button>
       </form>
 
-      <div className="relative my-10">
-        <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-gray-300 dark:border-zinc-800"></span></div>
-        <div className="relative flex justify-center text-xs uppercase"><span className="bg-white dark:bg-black px-2 text-gray-500">or</span></div>
-      </div>
-
-      <p className="text-center text-sm text-gray-500">
-        Already have an account?{' '}
-        <Link className="text-black dark:text-white underline hover:text-[#1DB954]" href="/auth/login">
-          Log in
-        </Link>
+      <p className="mt-6 text-center text-sm font-medium">
+        Already a member? <Link href="/auth/login" className="text-fuchsia-600 font-bold">Log in</Link>
       </p>
     </div>
   )
@@ -102,10 +87,8 @@ function SignupForm() {
 
 export default function SignupPage() {
   return (
-    <main className="min-h-screen py-12 flex flex-col items-center bg-white dark:bg-black text-black dark:text-white">
-      <Suspense fallback={<div>Loading...</div>}>
-        <SignupForm />
-      </Suspense>
+    <main className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-black p-4">
+      <SignupForm />
     </main>
   )
 }

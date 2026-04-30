@@ -1,113 +1,70 @@
 'use client'
 
-import { useState, Suspense, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, Suspense } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase/client'
+import { Eye, EyeOff } from 'lucide-react'
 
 function LoginForm() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-
-  useEffect(() => {
-    const err = searchParams.get('error')
-    if (err) setError(err)
-  }, [searchParams])
+  const [error, setError] = useState('')
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    setError('')
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-      return
-    }
+    if (error) { setError(error.message); setLoading(false); return }
     router.push('/dashboard')
   }
 
   return (
-    <div className="w-full max-w-sm px-4">
-      {/* Spotify-style Logo Header */}
-      <div className="flex justify-center mb-10">
-        <div className="text-3xl font-black tracking-tighter text-black dark:text-white">
-          Nexora<span className="text-[#1DB954]">.</span>
-        </div>
+    <div className="w-full max-w-sm px-6 py-10 bg-white dark:bg-zinc-950 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xl">
+      <div className="text-center mb-8">
+        <h2 className="text-4xl font-black italic tracking-tighter text-fuchsia-600 dark:text-fuchsia-500 uppercase">
+          Club<span className="text-black dark:text-white">Nex</span>
+        </h2>
+        <p className="text-sm font-bold text-zinc-500 mt-2">Back to the beats.</p>
       </div>
 
-      <h1 className="text-3xl font-bold text-center mb-8 tracking-tight text-black dark:text-white">
-        Log in to Nexora
-      </h1>
-
-      {error && (
-        <div className="bg-red-500 text-white p-3 rounded-sm mb-4 text-sm font-semibold text-center">
-          {error}
-        </div>
-      )}
-
-      {/* OAuth Section */}
-      <div className="space-y-3 mb-6">
-        <Button 
-          variant="outline" 
-          onClick={() => supabase.auth.signInWithOAuth({ provider: 'google' })}
-          className="w-full rounded-full border-gray-400 py-6 font-bold hover:border-black dark:hover:border-white transition-all bg-transparent"
-        >
-          Continue with Google
-        </Button>
-        <Button 
-          variant="outline"
-          onClick={() => supabase.auth.signInWithOAuth({ provider: 'github' })}
-          className="w-full rounded-full border-gray-400 py-6 font-bold hover:border-black dark:hover:border-white transition-all bg-transparent"
-        >
-          Continue with GitHub
-        </Button>
-      </div>
-
-      <hr className="border-gray-200 dark:border-zinc-800 mb-8" />
-
-      {/* Form Section */}
-      <form onSubmit={handleLogin} className="space-y-5">
+      <form onSubmit={handleLogin} className="space-y-4">
         <div>
-          <label className="text-sm font-bold mb-2 block text-black dark:text-white">Email address</label>
-          <Input
-            className="rounded-md border-gray-400 dark:bg-zinc-900 dark:border-zinc-700 focus:ring-2 focus:ring-white"
-            placeholder="Email address"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+          <label className="text-xs font-black uppercase tracking-widest mb-1 block">Email</label>
+          <Input 
+            className="dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 focus:border-fuchsia-500" 
+            value={email} onChange={(e) => setEmail(e.target.value)} 
           />
         </div>
 
-        <div>
-          <label className="text-sm font-bold mb-2 block text-black dark:text-white">Password</label>
-          <Input
-            type="password"
-            className="rounded-md border-gray-400 dark:bg-zinc-900 dark:border-zinc-700"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+        <div className="relative">
+          <label className="text-xs font-black uppercase tracking-widest mb-1 block">Password</label>
+          <Input 
+            type={showPassword ? "text" : "password"}
+            className="dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700"
+            value={password} onChange={(e) => setPassword(e.target.value)}
           />
+          <button 
+            type="button" 
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-8 text-zinc-500 hover:text-fuchsia-500"
+          >
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
         </div>
 
-        <Button 
-          className="w-full bg-[#1DB954] hover:bg-[#1ed760] text-black font-bold py-6 rounded-full mt-4" 
-          disabled={loading}
-        >
-          {loading ? 'Logging in...' : 'Log In'}
+        <Button className="w-full bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-black py-6 rounded-full uppercase tracking-widest shadow-lg shadow-fuchsia-500/20">
+          Enter the Club
         </Button>
       </form>
 
-      <p className="text-center text-sm mt-8 text-gray-500 font-medium">
-        Don't have an account?{' '}
-        <Link className="text-black dark:text-white underline hover:text-[#1DB954] transition-colors" href="/auth/signup">
-          Sign up for Nexora
-        </Link>
+      <p className="mt-8 text-center text-sm font-medium">
+        Not on the list? <Link href="/auth/signup" className="text-fuchsia-600 underline">Join Now</Link>
       </p>
     </div>
   )
@@ -115,10 +72,8 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-white dark:bg-black text-black dark:text-white">
-      <Suspense fallback={<div>Loading...</div>}>
-        <LoginForm />
-      </Suspense>
+    <main className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-black p-4">
+      <Suspense><LoginForm /></Suspense>
     </main>
   )
 }
