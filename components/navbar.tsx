@@ -37,11 +37,10 @@ export function Navbar() {
   }, []);
 
   useEffect(() => {
-    // ✅ FIX: Only fetch if user exists AND we are mounted
-    // This stops the 401 error in the console
+    // Only fetch if we are mounted and have a user object from useAuth
     if (mounted && user) {
       fetchProfile();
-    } else if (!user) {
+    } else if (mounted && !user) {
       setProfile(null);
     }
   }, [user, mounted]);
@@ -49,36 +48,51 @@ export function Navbar() {
   const fetchProfile = async () => {
     try {
       const response = await fetch('/api/auth/me');
-      if (response.status === 401) return; // ✅ Silently exit if unauthorized
       
+      // If the API returns 401, we just clear the profile
+      if (!response.ok) {
+        setProfile(null);
+        return;
+      }
+
       const data = await response.json();
+      
       if (data.user) {
+        // Logic to determine role: check DB role OR hardcoded admin email
+        const isSystemAdmin = user?.email === 'sangamkunwar48@gmail.com';
+        
         setProfile({
-          full_name: data.user.full_name,
-          avatar_url: data.user.avatar_url,
-          member_id: data.user.userId,
-          role: data.user.role,
+          full_name: data.user.full_name || 'ICT Member',
+          avatar_url: data.user.avatar_url || '',
+          member_id: data.user.member_id || 'Member',
+          role: isSystemAdmin ? 'admin' : (data.user.role || 'member'),
         });
       }
     } catch (error) {
-      // Only log actual network errors, not 401s
       console.error('Profile fetch failed:', error);
+      setProfile(null);
     }
   };
 
   const handleSignOut = async () => {
     await signOut();
     setShowUserMenu(false);
+    setProfile(null);
     router.push('/');
   };
 
+  // Prevent hydration mismatch
   if (!mounted) return null;
+
+  // Check if current user is an admin
+  const isAdmin = profile?.role === 'admin' || user?.email === 'sangamkunwar48@gmail.com';
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 mx-4 my-4 rounded-2xl bg-card/40 backdrop-blur-xl border border-border/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           
+          {/* Logo Section */}
           <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <Image
               src="/ictclubNJBS.jpg"
@@ -92,7 +106,7 @@ export function Navbar() {
             </span>
           </Link>
 
-          {/* Desktop Menu */}
+          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
             {navItems.map((item) => (
               <Link
@@ -105,11 +119,12 @@ export function Navbar() {
             ))}
           </div>
 
-          {/* Actions */}
+          {/* User Actions & Theme Toggle */}
           <div className="flex items-center gap-3">
             <button
               onClick={toggleTheme}
               className="p-2 rounded-lg text-foreground/70 hover:bg-primary/10 hover:text-primary transition-all"
+              aria-label="Toggle Theme"
             >
               {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </button>
@@ -136,9 +151,7 @@ export function Navbar() {
 
                 {showUserMenu && (
                   <>
-                    {/* Backdrop to close menu when clicking outside */}
                     <div className="fixed inset-0 z-[-1]" onClick={() => setShowUserMenu(false)} />
-                    
                     <div className="absolute right-0 top-full mt-3 w-64 bg-card border border-border shadow-2xl rounded-2xl py-3 overflow-hidden animate-in fade-in zoom-in duration-200">
                       <div className="px-4 py-3 border-b border-border/50 bg-muted/30">
                         <p className="font-bold text-sm truncate">{profile?.full_name || 'ICT Member'}</p>
@@ -156,10 +169,10 @@ export function Navbar() {
                           <User size={16} /> My Profile
                         </Link>
 
-                        {(profile?.role === 'admin' || user?.email === 'sangamkunwar48@gmail.com') && (
+                        {isAdmin && (
                           <Link
                             href="/admin"
-                            className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-lg text-primary hover:bg-primary/10 transition-colors"
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-lg text-primary font-medium hover:bg-primary/10 transition-colors"
                             onClick={() => setShowUserMenu(false)}
                           >
                             <Settings size={16} /> Admin Dashboard
@@ -194,7 +207,7 @@ export function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Navigation */}
         {isOpen && (
           <div className="md:hidden py-4 border-t border-border/50 space-y-1">
             {navItems.map((item) => (
