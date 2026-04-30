@@ -6,12 +6,10 @@ import Link from 'next/link'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase/client'
-import { Mail, Lock } from 'lucide-react'
 
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -26,98 +24,89 @@ function LoginForm() {
     e.preventDefault()
     setLoading(true)
     setError('')
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
       setError(error.message)
       setLoading(false)
       return
     }
-
     router.push('/dashboard')
   }
 
-  const handleOAuth = async (provider: 'google' | 'github') => {
-    await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    })
-  }
-
   return (
-    <div className="w-full max-w-md bg-white/80 backdrop-blur-xl border shadow-2xl rounded-2xl p-8">
-      
-      {/* LOGO */}
-      <div className="text-center mb-6">
-        <div className="text-3xl font-bold text-purple-600">
-          NexoraTech
+    <div className="w-full max-w-sm px-4">
+      {/* Spotify-style Logo Header */}
+      <div className="flex justify-center mb-10">
+        <div className="text-3xl font-black tracking-tighter text-black dark:text-white">
+          Nexora<span className="text-[#1DB954]">.</span>
         </div>
-        <p className="text-sm text-gray-500">Welcome back 👋</p>
       </div>
 
+      <h1 className="text-3xl font-bold text-center mb-8 tracking-tight text-black dark:text-white">
+        Log in to Nexora
+      </h1>
+
       {error && (
-        <div className="bg-red-50 text-red-600 p-2 rounded mb-3 text-sm">
+        <div className="bg-red-500 text-white p-3 rounded-sm mb-4 text-sm font-semibold text-center">
           {error}
         </div>
       )}
 
-      {/* OAuth */}
-      <div className="space-y-2 mb-4">
-        <button
-          onClick={() => handleOAuth('google')}
-          className="w-full border py-2 rounded-lg hover:bg-gray-50 transition"
+      {/* OAuth Section */}
+      <div className="space-y-3 mb-6">
+        <Button 
+          variant="outline" 
+          onClick={() => supabase.auth.signInWithOAuth({ provider: 'google' })}
+          className="w-full rounded-full border-gray-400 py-6 font-bold hover:border-black dark:hover:border-white transition-all bg-transparent"
         >
           Continue with Google
-        </button>
-
-        <button
-          onClick={() => handleOAuth('github')}
-          className="w-full border py-2 rounded-lg hover:bg-gray-50 transition"
+        </Button>
+        <Button 
+          variant="outline"
+          onClick={() => supabase.auth.signInWithOAuth({ provider: 'github' })}
+          className="w-full rounded-full border-gray-400 py-6 font-bold hover:border-black dark:hover:border-white transition-all bg-transparent"
         >
           Continue with GitHub
-        </button>
+        </Button>
       </div>
 
-      <div className="text-center text-xs text-gray-400 mb-4">OR</div>
+      <hr className="border-gray-200 dark:border-zinc-800 mb-8" />
 
-      {/* FORM */}
-      <form onSubmit={handleLogin} className="space-y-3">
-        <div className="relative">
-          <Mail className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+      {/* Form Section */}
+      <form onSubmit={handleLogin} className="space-y-5">
+        <div>
+          <label className="text-sm font-bold mb-2 block text-black dark:text-white">Email address</label>
           <Input
-            className="pl-9"
-            placeholder="Email"
+            className="rounded-md border-gray-400 dark:bg-zinc-900 dark:border-zinc-700 focus:ring-2 focus:ring-white"
+            placeholder="Email address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
         </div>
 
-        <div className="relative">
-          <Lock className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+        <div>
+          <label className="text-sm font-bold mb-2 block text-black dark:text-white">Password</label>
           <Input
             type="password"
-            className="pl-9"
+            className="rounded-md border-gray-400 dark:bg-zinc-900 dark:border-zinc-700"
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>
 
-        <Button className="w-full" disabled={loading}>
-          {loading ? 'Logging in...' : 'Login'}
+        <Button 
+          className="w-full bg-[#1DB954] hover:bg-[#1ed760] text-black font-bold py-6 rounded-full mt-4" 
+          disabled={loading}
+        >
+          {loading ? 'Logging in...' : 'Log In'}
         </Button>
       </form>
 
-      <p className="text-center text-sm mt-4">
-        No account?{' '}
-        <Link className="text-purple-600 font-medium" href="/auth/signup">
-          Sign up
+      <p className="text-center text-sm mt-8 text-gray-500 font-medium">
+        Don't have an account?{' '}
+        <Link className="text-black dark:text-white underline hover:text-[#1DB954] transition-colors" href="/auth/signup">
+          Sign up for Nexora
         </Link>
       </p>
     </div>
@@ -126,7 +115,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-100 via-white to-blue-100">
+    <main className="min-h-screen flex flex-col items-center justify-center bg-white dark:bg-black text-black dark:text-white">
       <Suspense fallback={<div>Loading...</div>}>
         <LoginForm />
       </Suspense>

@@ -6,11 +6,9 @@ import Link from 'next/link'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase/client'
-import { User, Mail, Lock } from 'lucide-react'
 
 function SignupForm() {
   const router = useRouter()
-
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
@@ -21,115 +19,81 @@ function SignupForm() {
     e.preventDefault()
     setLoading(true)
     setError('')
-
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: {
-          full_name: fullName,
-        },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
+      options: { data: { full_name: fullName } },
     })
-
     if (error) {
       setError(error.message)
       setLoading(false)
       return
     }
-
     router.push('/dashboard')
   }
 
-  const handleOAuth = async (provider: 'google' | 'github') => {
-    await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    })
-  }
-
   return (
-    <div className="w-full max-w-md bg-white/80 backdrop-blur-xl border shadow-2xl rounded-2xl p-8">
-
-      {/* LOGO */}
-      <div className="text-center mb-6">
-        <div className="text-3xl font-bold text-purple-600">
-          NexoraTech
+    <div className="w-full max-w-sm px-4">
+      <div className="flex justify-center mb-10">
+        <div className="text-3xl font-black tracking-tighter">
+          Nexora<span className="text-[#1DB954]">.</span>
         </div>
-        <p className="text-sm text-gray-500">Create your account 🚀</p>
       </div>
 
-      {error && (
-        <div className="bg-red-50 text-red-600 p-2 rounded mb-3 text-sm">
-          {error}
-        </div>
-      )}
+      <h1 className="text-4xl font-bold text-center mb-10 tracking-tighter">
+        Sign up to start listening
+      </h1>
 
-      {/* OAuth */}
-      <div className="space-y-2 mb-4">
-        <button
-          onClick={() => handleOAuth('google')}
-          className="w-full border py-2 rounded-lg hover:bg-gray-50"
-        >
-          Continue with Google
-        </button>
-
-        <button
-          onClick={() => handleOAuth('github')}
-          className="w-full border py-2 rounded-lg hover:bg-gray-50"
-        >
-          Continue with GitHub
-        </button>
-      </div>
-
-      <div className="text-center text-xs text-gray-400 mb-4">OR</div>
-
-      {/* FORM */}
-      <form onSubmit={handleSignup} className="space-y-3">
-
-        <div className="relative">
-          <User className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+      <form onSubmit={handleSignup} className="space-y-6">
+        <div>
+          <label className="text-sm font-bold mb-2 block">What's your email?</label>
           <Input
-            className="pl-9"
-            placeholder="Full Name"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-          />
-        </div>
-
-        <div className="relative">
-          <Mail className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
-          <Input
-            className="pl-9"
-            placeholder="Email"
+            className="rounded-md border-gray-400 dark:bg-zinc-900 dark:border-zinc-700"
+            placeholder="Enter your email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
         </div>
 
-        <div className="relative">
-          <Lock className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+        <div>
+          <label className="text-sm font-bold mb-2 block">Create a password</label>
           <Input
             type="password"
-            className="pl-9"
-            placeholder="Password"
+            className="rounded-md border-gray-400 dark:bg-zinc-900 dark:border-zinc-700"
+            placeholder="Create a password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>
 
-        <Button className="w-full" disabled={loading}>
-          {loading ? 'Creating...' : 'Create Account'}
+        <div>
+          <label className="text-sm font-bold mb-2 block">What should we call you?</label>
+          <Input
+            className="rounded-md border-gray-400 dark:bg-zinc-900 dark:border-zinc-700"
+            placeholder="Enter a profile name"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+          />
+          <p className="text-xs text-gray-500 mt-2">This appears on your profile.</p>
+        </div>
+
+        <Button 
+          className="w-full bg-[#1DB954] hover:bg-[#1ed760] text-black font-bold py-7 rounded-full text-lg" 
+          disabled={loading}
+        >
+          {loading ? 'Creating...' : 'Sign Up'}
         </Button>
       </form>
 
-      <p className="text-center text-sm mt-4">
-        Already have account?{' '}
-        <Link className="text-purple-600 font-medium" href="/auth/login">
-          Login
+      <div className="relative my-10">
+        <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-gray-300 dark:border-zinc-800"></span></div>
+        <div className="relative flex justify-center text-xs uppercase"><span className="bg-white dark:bg-black px-2 text-gray-500">or</span></div>
+      </div>
+
+      <p className="text-center text-sm text-gray-500">
+        Already have an account?{' '}
+        <Link className="text-black dark:text-white underline hover:text-[#1DB954]" href="/auth/login">
+          Log in
         </Link>
       </p>
     </div>
@@ -138,7 +102,7 @@ function SignupForm() {
 
 export default function SignupPage() {
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-white to-purple-100">
+    <main className="min-h-screen py-12 flex flex-col items-center bg-white dark:bg-black text-black dark:text-white">
       <Suspense fallback={<div>Loading...</div>}>
         <SignupForm />
       </Suspense>
