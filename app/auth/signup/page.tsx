@@ -5,12 +5,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { createBrowserClient } from '@supabase/ssr'
-
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { supabase } from '@/lib/supabase/client'
+import { User, Mail, Lock } from 'lucide-react'
 
 function SignupForm() {
   const router = useRouter()
@@ -26,7 +22,7 @@ function SignupForm() {
     setLoading(true)
     setError('')
 
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -43,11 +39,7 @@ function SignupForm() {
       return
     }
 
-    if (data.user) {
-      router.push('/dashboard')
-    }
-
-    setLoading(false)
+    router.push('/dashboard')
   }
 
   const handleOAuth = async (provider: 'google' | 'github') => {
@@ -60,46 +52,85 @@ function SignupForm() {
   }
 
   return (
-    <div className="bg-white p-8 rounded-xl shadow-xl">
-      <h1 className="text-2xl font-bold mb-4">Signup</h1>
+    <div className="w-full max-w-md bg-white/80 backdrop-blur-xl border shadow-2xl rounded-2xl p-8">
 
-      {error && <p className="text-red-500">{error}</p>}
+      {/* LOGO */}
+      <div className="text-center mb-6">
+        <div className="text-3xl font-bold text-purple-600">
+          NexoraTech
+        </div>
+        <p className="text-sm text-gray-500">Create your account 🚀</p>
+      </div>
 
-      <button onClick={() => handleOAuth('google')} className="w-full mb-2">
-        Continue with Google
-      </button>
+      {error && (
+        <div className="bg-red-50 text-red-600 p-2 rounded mb-3 text-sm">
+          {error}
+        </div>
+      )}
 
-      <button onClick={() => handleOAuth('github')} className="w-full mb-4">
-        Continue with GitHub
-      </button>
+      {/* OAuth */}
+      <div className="space-y-2 mb-4">
+        <button
+          onClick={() => handleOAuth('google')}
+          className="w-full border py-2 rounded-lg hover:bg-gray-50"
+        >
+          Continue with Google
+        </button>
 
+        <button
+          onClick={() => handleOAuth('github')}
+          className="w-full border py-2 rounded-lg hover:bg-gray-50"
+        >
+          Continue with GitHub
+        </button>
+      </div>
+
+      <div className="text-center text-xs text-gray-400 mb-4">OR</div>
+
+      {/* FORM */}
       <form onSubmit={handleSignup} className="space-y-3">
-        <Input
-          placeholder="Full Name"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-        />
 
-        <Input
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+        <div className="relative">
+          <User className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+          <Input
+            className="pl-9"
+            placeholder="Full Name"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+          />
+        </div>
 
-        <Input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+        <div className="relative">
+          <Mail className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+          <Input
+            className="pl-9"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
 
-        <Button type="submit" disabled={loading}>
+        <div className="relative">
+          <Lock className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+          <Input
+            type="password"
+            className="pl-9"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
+
+        <Button className="w-full" disabled={loading}>
           {loading ? 'Creating...' : 'Create Account'}
         </Button>
       </form>
 
-      <p className="mt-4">
-        Already have account? <Link href="/auth/login">Login</Link>
+      <p className="text-center text-sm mt-4">
+        Already have account?{' '}
+        <Link className="text-purple-600 font-medium" href="/auth/login">
+          Login
+        </Link>
       </p>
     </div>
   )
@@ -107,7 +138,7 @@ function SignupForm() {
 
 export default function SignupPage() {
   return (
-    <main className="flex justify-center items-center min-h-screen">
+    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-white to-purple-100">
       <Suspense fallback={<div>Loading...</div>}>
         <SignupForm />
       </Suspense>
